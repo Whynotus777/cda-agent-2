@@ -1,0 +1,164 @@
+Source: https://yosyshq.readthedocs.io/projects/yosys/en/latest/
+
+Yosys Open SYnthesis Suite
+¶
+Yosys is an open source framework for RTL synthesis.  To learn more about Yosys,
+see
+What is Yosys
+.  For a quick guide on how to get started using Yosys,
+check out
+Getting started with Yosys
+.  For the complete list of commands
+available, go to
+Command reference
+.
+Yosys (index)
+What is Yosys
+What you can do with Yosys
+Typical applications for Yosys
+Things you can’t do
+The Yosys family
+The original thesis abstract
+Benefits of open source HDL synthesis
+History of Yosys
+Getting started with Yosys
+Installation
+CAD suite(s)
+Building from source
+Source tree and build system
+Synthesis starter
+Demo design
+Loading the design
+Elaboration
+Flattening
+The coarse-grain representation
+Hardware mapping
+Final steps
+Scripting in Yosys
+Script parsing
+The synthesis starter script
+Using Yosys (advanced)
+Synthesis in detail
+Synth commands
+Converting process blocks
+FSM handling
+Memory handling
+Optimization passes
+Technology mapping
+The extract pass
+The ABC toolbox
+Mapping to cell libraries
+More scripting
+Loading a design
+Selections
+Interactive design investigation
+Symbolic model checking
+Dataflow tracking
+Minimizing failing (or bugged) designs
+Before you start
+Minimizing RTLIL designs with bugpoint
+Minimizing Verilog designs
+Identifying issues
+Notes on Verilog support in Yosys
+Unsupported Verilog-2005 Features
+Verilog Attributes and non-standard features
+Non-standard or SystemVerilog features for formal verification
+Supported features from SystemVerilog
+Scripting with Pyosys
+Getting Pyosys
+Scripting and Database Inspection
+Modifying the Database
+Encapsulating as Passes
+Yosys internals
+Internal flow
+Flow overview
+Control and data flow
+The Verilog and AST frontends
+Internal formats
+The RTL Intermediate Language (RTLIL)
+Working with the Yosys codebase
+Writing extensions
+Compiling with Verific library
+Writing a new backend using FunctionalIR
+Identifying the root cause of bugs
+Contributing to Yosys
+Testing Yosys
+Techmap by example
+Mapping OR3X1
+Conditional techmap
+Scripting in map modules
+Handling constant inputs
+Handling shorted inputs
+Notes on using techmap
+Hashing and associative data structures in Yosys
+Container classes based on hashing
+The hash function
+Making a type hashable
+Porting plugins from the legacy interface
+Appendix
+A primer on digital circuit synthesis
+RTLIL text representation
+Auxiliary libraries
+Auxiliary programs
+Literature references
+Internal cell library
+Word-level cells
+Unary operators
+Binary operators
+Multiplexers
+Registers
+Memories
+Finite state machines
+Coarse arithmetics
+Arbitrary logic functions
+Specify rules
+Formal verification cells
+Debugging cells
+Wire cells
+Gate-level cells
+Combinatorial cells (simple)
+Combinatorial cells (combined)
+Flip-flop cells
+Latch cells
+Other gate-level cells
+Cell properties
+Command line reference
+Yosys environment variables
+Reading input files
+Writing output files
+Yosys kernel commands
+Formal verification
+Passes
+Working with hierarchy
+Converting process blocks
+FSM handling
+Memory handling
+Optimization passes
+Technology mapping
+Design modification
+Equivalence checking
+Simulating circuits
+Design status
+Technology libraries
+Generic
+Achronix
+Anlogic
+CoolRunner-II
+eASIC
+ECP5
+FABulous
+Gatemate
+Gowin
+GreenPAK4
+iCE40
+Intel (MAX10, Cyclone IV)
+Intel ALM (Cyclone V, Arria V, Cyclone 10 GX)
+Lattice
+Lattice Nexus
+Microchip
+Microchip - SmartFusion2/IGLOO2
+NanoXplore
+QuickLogic
+Xilinx
+Internal commands for developers
+Writing command help

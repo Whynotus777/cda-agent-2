@@ -1,0 +1,249 @@
+Source: https://openlane.readthedocs.io/en/latest/
+
+The OpenLane Documentation
+¶
+OpenLane is an automated RTL to GDSII flow based on several components including OpenROAD, Yosys, Magic, Netgen, CVC, SPEF-Extractor, KLayout and a number of custom scripts for design exploration and optimization. It also provides a number of custom scripts for design exploration and optimization.
+The flow performs all ASIC implementation steps from RTL all the way down to GDSII. Currently, it supports both A and B variants of the sky130 PDK, the C variant of the gf180mcu PDK, and instructions to add support for other (including proprietary) PDKs are documented.
+OpenLane abstracts the underlying open source utilities, and allows users to configure all their behavior with just a single configuration file.
+Check the sidebar to the left to get started.
+Getting Started
+Installation
+Ubuntu 20.04+
+Installation of required packages
+Docker Installation
+Making Docker available without root (Linux)
+Checking the Docker Installation
+Troubleshooting docker installation issues [Linux/Ubuntu only]
+Checking Installation Requirements
+Download and Install OpenLane
+Optional: Viewing Test Design Outputs
+macOS 11+
+Installation of required packages
+Checking the Docker Installation
+Troubleshooting docker installation issues [Linux/Ubuntu only]
+Checking Installation Requirements
+Download and Install OpenLane
+Optional: Viewing Test Design Outputs
+Windows 10+
+Installation of required packages
+Checking the Docker Installation
+Troubleshooting docker installation issues [Linux/Ubuntu only]
+Checking Installation Requirements
+Download and Install OpenLane
+Optional: Viewing Test Design Outputs
+Other Linux
+Installation steps
+Installation of Required Packages
+Docker Installation
+Making Docker available without root (Linux)
+Checking the Docker Installation
+Troubleshooting docker installation issues [Linux/Ubuntu only]
+Checking Installation Requirements
+Download and Install OpenLane
+Optional: Viewing Test Design Outputs
+Containerless/Local
+Base Requirements
+Tool Library
+Updating OpenLane
+Quick-Start Guide
+Overview
+Starting the OpenLane Environment
+Running the flow
+Creating new designs
+Advanced: Using custom PDK locations and OpenLane Docker images
+OpenLane Architecture
+OpenLane Design Stages
+OpenLane Output
+Usage guides
+Adding Your Designs
+Regression & Exploration
+Overview
+Default Test Set Results
+Usage
+Output
+Command line arguments
+Hardening Macros
+Base Requirements
+Synthesis
+Static Timing Analysis
+Floorplan
+IO Placement
+Placement
+Global Placement
+Optimizations
+Resizer optimizations
+Detailed Placement
+Clock Tree Synthesis
+Power Grid/Power Distribution Network
+Diode Insertion
+Routing
+GDS Streaming
+Final Reports and Checks
+Chip Level Integration
+The Current Methodology
+Hardening Macros
+Hardening The Core
+Hardening The Full Chip
+Power_routing
+Macros
+Core
+General Notes
+Power Grid/Power Distribution Network
+Chip Level
+Core Level
+Macro Level
+Custom-Building PDKs
+Tutorials
+Hierarchical chip design (with macros)
+Hardening the mem_1r1w macroblock
+Create the memory macro design
+Create the RTL files
+Configure mem_1r1w
+Run the flow on the macroblock
+Analyzing the flow-generated files
+Chip level integration
+Create chip level
+Integrate the macros
+Verilog files
+Run the flow
+First issue
+Run the flow again
+Analyzing the results
+Exploring your designs
+Demo: Debugging LVS issues due to PDN issues
+Designing a chip with an OpenRAM (sky130)
+Overview
+Create a new design
+Create the Verilog files
+Connect the layout files and abstracts
+Connect the blackbox information and timing data
+Power/Ground nets
+Power/Ground PDN connections
+Floorplanning
+Macrocell placement
+Common problems to avoid
+DRCs inside SRAM macros
+DRC because of PDN being too close to the met4 inside SRAM
+Setup violations
+JSON syntax error regarding the comma
+Optional: Memory footprint
+Running the flow
+Reference Manual
+Command-Line Arguments
+Design Configuration Files
+Initializing a design for use with OpenLane
+JSON
+Processing
+Conditional Execution
+Variable Reference
+Expression Engine
+Tcl
+Replicate/Create Design Configs for a (PDK,STD_CELL_LIBRARY) Pair:
+Update Design Configs for a (PDK,STD_CELL_LIBRARY) Pair after an Exploration:
+Flow Configuration Variables
+Load Order
+Required variables
+Optional variables
+General
+Macros/Chip Integration
+Linting
+Synthesis
+STA
+Floorplanning
+Deprecated I/O Layer variables
+Resizer (Common)
+Placement
+CTS
+Routing
+RC Extraction
+IR Drop Analysis
+Magic
+LVS
+Flow control
+Checkers
+On comma-delimited variables
+PDK Configuration Variables
+User-Modifiable
+PDK-Static
+SCL-specific variables
+User-modifiable
+SCL-static
+Tracks Info File
+DRC Exclude Cells File
+No Synthesis Cells File
+Tcl Commands
+General Commands
+Checker Commands
+Synthesis/Verilog Commands
+Floorplan Commands
+Placement Commands
+CTS Commands
+Fill Insertion/Diode Insertion Commands
+PDN Generation Commands
+Routing Commands
+Magic Commands
+KLayout Commands
+LVS Commands
+ERC Commands
+Utility Commands
+Interactive Mode
+Report Data Definitions
+Default Printed Information Variables
+Default Printed Configuration Variables
+Optional variables
+Viewing layouts graphically
+Usage
+Command-line interface (CLI)
+Additional Material
+Text Guides
+Official
+Community
+English
+日本語
+Español
+Videos
+Publications
+Authors
+Core Team
+Core Team Alumni
+All Contributors
+Special Thanks
+Developer’s Guide
+Contributing Code
+Branching
+Testing and Code Standards
+Choice of Language
+Tcl
+Python
+Yosys, OpenROAD and Magic Scripts
+Submissions
+The Approval Process
+Licensing and Copyright
+Contributing Docs
+Introduction
+Building documentation locally
+Documentation organization
+Writing Style and Consistency
+Term Consistency
+Taking screenshots
+Troubleshooting
+pip
+module related errors
+Porting a PDK
+Folder structure
+Configuration Files
+or_issue.py
+Warning about proprietary files
+Usage
+Failures
+Odd Behavior
+Manually
+Continuous Integration
+Building and Customizing the Docker Image
+Structure
+Building the OpenLane Image
+Updating a Tool Binary
+Running the newly created Docker image
+Running as root
+Issue regression tests
+Issue regression tests flow

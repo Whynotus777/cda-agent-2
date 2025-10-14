@@ -1,0 +1,117 @@
+# CDA Agent Configuration
+
+# LLM Configuration
+llm:
+  model_name: "llama3:8b"  # Default fallback
+  ollama_host: "http://localhost:11434"
+  temperature: 0.7
+  max_tokens: 2048
+  timeout_secs: 90
+  retries: 4
+  cache_size: 64
+
+  # Phase Router - Specialist-based Architecture (RECOMMENDED)
+  phase_routing:
+    enable: true  # Use phase-aware specialist routing (better than triage)
+
+    # 8B Specialists by phase (all same parameter size, trained differently)
+    specialists:
+      synthesis: "llama3:8b-synthesis"      # RTL synthesis, Yosys expert
+      placement: "llama3:8b-placement"      # Cell placement, DREAMPlace expert
+      routing: "llama3:8b-routing"          # Routing, TritonRoute expert
+      timing: "llama3:8b-timing"            # Timing analysis, OpenSTA expert
+      power: "llama3:8b-power"              # Power optimization expert
+      verification: "llama3:8b-verification" # Verification, DRC/LVS expert
+      floorplan: "llama3:8b-floorplan"      # Floorplanning expert
+      general: "llama3:8b"                  # General fallback
+
+    # 70B Supervisor - only intervenes when specialists struggle
+    supervisor:
+      model: "llama3:70b"
+      struggle_threshold: 2  # Escalate to 70B after N struggles
+
+  # Legacy Triage Router (can disable if using phase routing)
+  triage:
+    enable: false  # Disabled in favor of phase routing
+
+    # Models for each layer
+    models:
+      triage: "llama3.2:3b"      # Layer 1: Always first (1-2 sec)
+      moderate: "llama3:8b"       # Layer 2: Moderate complexity
+      complex: "llama3:70b"       # Layer 3: Complex reasoning
+
+    # Token thresholds for routing (fallback to char if token est. unavailable)
+    token_thresholds:
+      triage_to_moderate: 200   # <= tokens => stay triage or go to 8B
+      moderate_to_complex: 600  # > tokens => 70B
+    char_thresholds:
+      triage_to_moderate: 100000
+      moderate_to_complex: 200000
+
+    # Intelligent escalation triggers
+    escalation:
+      conversation_depth: 3       # Auto-escalate after N turns (shorter for faster help)
+      consecutive_moderate: 2     # Escalate if N moderate queries in a row
+      confusion_threshold: 2      # Bypass 3B after N confused responses
+      enable_auto_escalation: true
+      enable_confusion_detection: true  # Detect when 3B doesn't understand and escalate immediately
+
+    # Shadow learning (70B always learns in background)
+    shadow_orchestrator:
+      enable: true
+      model: "llama3:70b"
+      max_tokens: 256
+      async: true  # Non-blocking
+
+# Technology Configuration
+technology:
+  default_process_node: "7nm"
+  tech_library_path: "/home/quantumc1/cda-agent/data/tech_libs/"
+
+# Tool Paths
+tools:
+  yosys_binary: "yosys"
+  dreamplace_path: "/home/quantumc1/DREAMPlace"
+  tritonroute_binary: "TritonRoute"
+  opensta_binary: "sta"
+
+# RL Agent Configuration
+rl_agent:
+  state_dim: 12  # Will be set dynamically
+  action_dim: 17  # Number of actions in ActionSpace
+  learning_rate: 0.0001
+  gamma: 0.99
+  epsilon_start: 1.0
+  epsilon_end: 0.01
+  epsilon_decay: 1000
+  replay_buffer_size: 10000
+  batch_size: 64
+  target_network_update_freq: 100  # Update every N steps
+  device: "cuda:0"
+  enable_amp: true
+  enable_torch_compile: false
+
+# Training Configuration
+training:
+  max_episodes: 500
+  max_steps_per_episode: 50
+  save_checkpoint_every: 10  # episodes
+  checkpoint_dir: "./data/checkpoints/"
+
+# Design Goals (default)
+design_goals:
+  performance: 1.0  # Maximize (priority weight)
+  power: 0.8
+  area: 0.6
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_dir: "./logs/"
+  log_to_file: true
+  log_to_console: true
+
+# Environment
+environment:
+  max_optimization_iterations: 50
+  convergence_threshold: 0.01  # Stop if improvement < 1%

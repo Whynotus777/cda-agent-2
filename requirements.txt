@@ -1,0 +1,38 @@
+# CDA Agent Requirements
+
+# Core dependencies
+numpy>=1.21.0
+scipy>=1.7.0
+pyyaml>=6.0
+
+# Machine Learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# HTTP/API
+requests>=2.28.0
+
+# Parsing and data structures
+python-dateutil>=2.8.2
+
+# Development tools
+pytest>=7.0.0
+pytest-cov>=3.0.0
+
+# Visualization
+matplotlib>=3.5.0
+seaborn>=0.12.0
+
+# RAG (Retrieval Augmented Generation) Dependencies
+chromadb>=0.4.0                    # Vector database for document storage
+sentence-transformers>=2.2.0       # Semantic embeddings
+beautifulsoup4>=4.12.0             # HTML parsing for web scraping
+lxml>=4.9.0                        # XML/HTML parser (beautifulsoup backend)
+PyPDF2>=3.0.0                      # PDF parsing (optional but recommended)
+
+# Note: EDA tools should be installed separately:
+# - Yosys: sudo apt-get install yosys
+# - DREAMPlace: https://github.com/limbo018/DREAMPlace
+# - TritonRoute: Part of OpenROAD
+# - OpenSTA: sudo apt-get install opensta
+# - Ollama: https://ollama.ai

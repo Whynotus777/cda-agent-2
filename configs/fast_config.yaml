@@ -1,0 +1,64 @@
+# CDA Agent Configuration - FAST MODE
+
+# LLM Configuration - Using smaller model for speed
+llm:
+  model_name: "llama3.2:3b"  # Fastest option!
+  ollama_host: "http://localhost:11434"
+  temperature: 0.7
+  max_tokens: 1024  # Reduced for speed
+  timeout_secs: 30
+  retries: 2
+  cache_size: 128  # Larger cache
+
+# Technology Configuration
+technology:
+  default_process_node: "7nm"
+  tech_library_path: "/home/quantumc1/cda-agent/data/tech_libs/"
+
+# Tool Paths
+tools:
+  yosys_binary: "yosys"
+  dreamplace_path: "/home/quantumc1/DREAMPlace"
+  tritonroute_binary: "TritonRoute"
+  opensta_binary: "sta"
+
+# RL Agent Configuration
+rl_agent:
+  state_dim: 12
+  action_dim: 17
+  learning_rate: 0.0001
+  gamma: 0.99
+  epsilon_start: 1.0
+  epsilon_end: 0.01
+  epsilon_decay: 1000
+  replay_buffer_size: 10000
+  batch_size: 64
+  target_network_update_freq: 100
+  device: "cuda:0"
+  enable_amp: true
+  enable_torch_compile: false
+
+# Training Configuration
+training:
+  max_episodes: 500
+  max_steps_per_episode: 50
+  save_checkpoint_every: 10
+  checkpoint_dir: "./data/checkpoints/"
+
+# Design Goals (default)
+design_goals:
+  performance: 1.0
+  power: 0.8
+  area: 0.6
+
+# Logging
+logging:
+  level: "INFO"
+  log_dir: "./logs/"
+  log_to_file: true
+  log_to_console: true
+
+# Environment
+environment:
+  max_optimization_iterations: 50
+  convergence_threshold: 0.01
