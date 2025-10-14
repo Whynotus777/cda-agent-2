@@ -8,11 +8,13 @@ Implements standard gym-like interface.
 import numpy as np
 from typing import Dict, Tuple, Optional
 import logging
+import gymnasium as gym
+from gymnasium import spaces
 
 logger = logging.getLogger(__name__)
 
 
-class ChipDesignEnv:
+class ChipDesignEnv(gym.Env):
     """
     RL Environment for chip design optimization.
 
@@ -37,6 +39,8 @@ class ChipDesignEnv:
             world_model: World model with tech libraries and rules
             design_goals: Target goals (e.g., {'power': 0.8, 'performance': 1.0})
         """
+        super().__init__()
+
         self.design_state = design_state
         self.simulation_engine = simulation_engine
         self.world_model = world_model
@@ -49,25 +53,51 @@ class ChipDesignEnv:
         # Track history
         self.history = []
 
-        logger.info("Initialized ChipDesignEnv")
+        # Define action and observation space for Gym compatibility
+        from .actions import ActionSpace
+        self.num_actions = ActionSpace.get_action_count()
+        self.action_space = spaces.Discrete(self.num_actions)
 
-    def reset(self) -> np.ndarray:
+        # Observation space: normalized design metrics
+        # [timing_score, power_score, area_score, routing_score, stage_progress,
+        #  wns, tns, power_total, area_util, wirelength, overflow, density]
+        state_dim = len(design_state.get_state_vector())
+        self.observation_space = spaces.Box(
+            low=-np.inf,
+            high=np.inf,
+            shape=(state_dim,),
+            dtype=np.float32
+        )
+
+        logger.info(f"Initialized ChipDesignEnv with {self.num_actions} actions and state_dim={state_dim}")
+
+    def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None) -> Tuple[np.ndarray, Dict]:
         """
         Reset environment to initial state.
 
+        Args:
+            seed: Random seed for reproducibility
+            options: Additional options
+
         Returns:
-            Initial state observation
+            (initial_state, info)
         """
+        super().reset(seed=seed)
+
         self.current_step = 0
         self.history = []
 
         # Get initial state vector
         state = self.design_state.get_state_vector()
 
-        logger.info("Environment reset")
-        return np.array(state, dtype=np.float32)
+        info = {
+            'initial_metrics': self.design_state.get_metrics_summary()
+        }
 
-    def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
+        logger.info("Environment reset")
+        return np.array(state, dtype=np.float32), info
+
+    def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict]:
         """
         Take action in the environment.
 
@@ -75,7 +105,7 @@ class ChipDesignEnv:
             action: Action index to execute
 
         Returns:
-            (next_state, reward, done, info)
+            (next_state, reward, terminated, truncated, info)
         """
         self.current_step += 1
 
@@ -88,8 +118,8 @@ class ChipDesignEnv:
         # Calculate reward
         reward = self._calculate_reward(action_result)
 
-        # Check if done
-        done = self._check_done()
+        # Check termination conditions
+        terminated, truncated = self._check_termination()
 
         # Additional info
         info = {
@@ -108,7 +138,7 @@ class ChipDesignEnv:
             'metrics': info['metrics'].copy()
         })
 
-        return np.array(next_state, dtype=np.float32), reward, done, info
+        return np.array(next_state, dtype=np.float32), reward, terminated, truncated, info
 
     def _execute_action(self, action: int) -> Dict:
         """
@@ -154,30 +184,38 @@ class ChipDesignEnv:
 
         return reward
 
-    def _check_done(self) -> bool:
+    def _check_termination(self) -> Tuple[bool, bool]:
         """
         Check if episode should terminate.
 
         Returns:
-            True if done, False otherwise
+            (terminated, truncated) where:
+            - terminated: episode ended naturally (goal reached or failure)
+            - truncated: episode ended due to time limit
         """
-        # Done if max steps reached
-        if self.current_step >= self.max_steps:
-            return True
+        terminated = False
+        truncated = False
 
-        # Done if design meets all goals
+        # Truncated if max steps reached
+        if self.current_step >= self.max_steps:
+            truncated = True
+            return terminated, truncated
+
+        # Terminated if design meets all goals
         if self.design_state.is_signoff_ready():
             logger.info("Design is signoff ready - episode complete")
-            return True
+            terminated = True
+            return terminated, truncated
 
-        # Done if no improvement for many steps
+        # Terminated if no improvement for many steps
         if len(self.history) >= 10:
             recent_rewards = [h['reward'] for h in self.history[-10:]]
             if all(r <= 0 for r in recent_rewards):
                 logger.info("No improvement in last 10 steps - episode complete")
-                return True
+                terminated = True
+                return terminated, truncated
 
-        return False
+        return terminated, truncated
 
     def get_state_dim(self) -> int:
         """Get dimension of state vector"""
@@ -198,10 +236,31 @@ class ChipDesignEnv:
 
         print(f"\n=== Step {self.current_step}/{self.max_steps} ===")
         print(f"Stage: {metrics['stage']}")
-        print(f"Timing WNS: {metrics['timing']['wns']:.3f} ns")
-        print(f"Power: {metrics['power']['total']:.2f} mW")
-        print(f"Area Util: {metrics['area']['utilization']:.2%}")
-        print(f"Overall Score: {metrics['scores']['overall']:.3f}")
+
+        wns = metrics['timing'].get('wns')
+        if wns is not None:
+            print(f"Timing WNS: {wns:.3f} ns")
+        else:
+            print(f"Timing WNS: N/A")
+
+        power = metrics['power'].get('total')
+        if power is not None:
+            print(f"Power: {power:.2f} mW")
+        else:
+            print(f"Power: N/A")
+
+        util = metrics['area'].get('utilization')
+        if util is not None:
+            print(f"Area Util: {util:.2%}")
+        else:
+            print(f"Area Util: N/A")
+
+        score = metrics['scores'].get('overall')
+        if score is not None:
+            print(f"Overall Score: {score:.3f}")
+        else:
+            print(f"Overall Score: N/A")
+
         print()
 
     def get_episode_summary(self) -> Dict:

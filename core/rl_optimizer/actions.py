@@ -174,37 +174,135 @@ class ActionSpace:
     # Action implementations
 
     def _increase_density(self) -> Dict:
-        """Increase placement density"""
+        """Increase placement density to reduce area"""
         logger.info("Increasing placement density by 5%")
-        # TODO: Implement actual density adjustment
-        return {'info': 'Increased density'}
+
+        netlist_file = self.design_state.netlist_file
+        def_file = self.design_state.def_file
+
+        if not netlist_file:
+            return {'info': 'No netlist available'}
+
+        # Increase density (higher density = tighter packing)
+        params = {
+            'target_density': 0.8,  # Higher density
+            'wirelength_weight': 0.5,
+            'routability_weight': 0.5,
+            'enable_timing_driven': False
+        }
+
+        try:
+            output_def = def_file.replace('.def', '_high_density.def') if def_file else '/tmp/placement_high_density.def'
+
+            placement_result = self.simulation_engine.placement.place(
+                netlist_file=netlist_file,
+                def_file=def_file or '/tmp/floorplan.def',
+                output_def=output_def,
+                placement_params=params
+            )
+
+            if placement_result.get('success'):
+                self.design_state.def_file = output_def
+                self.design_state.update_metrics({
+                    'routing': {
+                        'total_wirelength': placement_result.get('hpwl', 0),
+                        'congestion_overflow': placement_result.get('overflow', 0)
+                    }
+                })
+
+            return {'info': 'Increased density', 'hpwl': placement_result.get('hpwl', 0)}
+
+        except Exception as e:
+            return {'info': f'Density increase failed: {e}'}
 
     def _decrease_density(self) -> Dict:
-        """Decrease placement density"""
+        """Decrease placement density to improve routability"""
         logger.info("Decreasing placement density by 5%")
-        return {'info': 'Decreased density'}
+
+        netlist_file = self.design_state.netlist_file
+        def_file = self.design_state.def_file
+
+        if not netlist_file:
+            return {'info': 'No netlist available'}
+
+        # Decrease density (lower density = more whitespace)
+        params = {
+            'target_density': 0.6,  # Lower density
+            'wirelength_weight': 0.5,
+            'routability_weight': 0.5,
+            'enable_timing_driven': False
+        }
+
+        try:
+            output_def = def_file.replace('.def', '_low_density.def') if def_file else '/tmp/placement_low_density.def'
+
+            placement_result = self.simulation_engine.placement.place(
+                netlist_file=netlist_file,
+                def_file=def_file or '/tmp/floorplan.def',
+                output_def=output_def,
+                placement_params=params
+            )
+
+            if placement_result.get('success'):
+                self.design_state.def_file = output_def
+                self.design_state.update_metrics({
+                    'routing': {
+                        'total_wirelength': placement_result.get('hpwl', 0),
+                        'congestion_overflow': placement_result.get('overflow', 0)
+                    }
+                })
+
+            return {'info': 'Decreased density', 'hpwl': placement_result.get('hpwl', 0)}
+
+        except Exception as e:
+            return {'info': f'Density decrease failed: {e}'}
 
     def _optimize_wirelength(self) -> Dict:
         """Run placement optimizing for wirelength"""
         logger.info("Optimizing for wirelength")
 
-        # Re-run DREAMPlace with wirelength focus
-        # TODO: Get actual file paths from design state
-        placement_result = self.simulation_engine.placement.optimize_placement(
-            current_def="/tmp/current.def",
-            output_def="/tmp/optimized.def",
-            optimization_focus="wirelength"
-        )
+        # Get current design files
+        netlist_file = self.design_state.netlist_file
+        def_file = self.design_state.def_file
 
-        # Update design state with new metrics
-        if placement_result.get('success'):
-            self.design_state.update_metrics({
-                'routing': {
-                    'total_wirelength': placement_result.get('hpwl', 0)
-                }
-            })
+        if not netlist_file:
+            logger.warning("No netlist file available for placement")
+            return {'info': 'No netlist available'}
 
-        return {'info': 'Optimized wirelength', 'result': placement_result}
+        # Create placement parameters optimized for wirelength
+        params = {
+            'target_density': 0.7,
+            'wirelength_weight': 1.0,  # High weight for wirelength
+            'routability_weight': 0.1,
+            'enable_timing_driven': False
+        }
+
+        # Run placement
+        try:
+            output_def = def_file.replace('.def', '_opt_wl.def') if def_file else '/tmp/placement_opt_wl.def'
+
+            placement_result = self.simulation_engine.placement.place(
+                netlist_file=netlist_file,
+                def_file=def_file or '/tmp/floorplan.def',
+                output_def=output_def,
+                placement_params=params
+            )
+
+            # Update design state with new metrics
+            if placement_result.get('success'):
+                self.design_state.def_file = output_def
+                self.design_state.update_metrics({
+                    'routing': {
+                        'total_wirelength': placement_result.get('hpwl', 0),
+                        'congestion_overflow': placement_result.get('overflow', 0)
+                    }
+                })
+
+            return {'info': 'Optimized wirelength', 'hpwl': placement_result.get('hpwl', 0)}
+
+        except Exception as e:
+            logger.error(f"Placement failed: {e}")
+            return {'info': f'Placement failed: {e}'}
 
     def _optimize_routability(self) -> Dict:
         """Run placement optimizing for routability"""
@@ -254,7 +352,49 @@ class ActionSpace:
     def _rerun_placement(self) -> Dict:
         """Re-run placement with current settings"""
         logger.info("Re-running placement")
-        return {'info': 'Re-ran placement'}
+
+        # Get current design files
+        netlist_file = self.design_state.netlist_file
+        def_file = self.design_state.def_file
+
+        if not netlist_file:
+            logger.warning("No netlist file available for placement")
+            return {'info': 'No netlist available'}
+
+        # Use default placement parameters
+        params = {
+            'target_density': 0.7,
+            'wirelength_weight': 0.5,
+            'routability_weight': 0.5,
+            'enable_timing_driven': False
+        }
+
+        # Run placement
+        try:
+            output_def = def_file.replace('.def', '_rerun.def') if def_file else '/tmp/placement_rerun.def'
+
+            placement_result = self.simulation_engine.placement.place(
+                netlist_file=netlist_file,
+                def_file=def_file or '/tmp/floorplan.def',
+                output_def=output_def,
+                placement_params=params
+            )
+
+            # Update design state
+            if placement_result.get('success'):
+                self.design_state.def_file = output_def
+                self.design_state.update_metrics({
+                    'routing': {
+                        'total_wirelength': placement_result.get('hpwl', 0),
+                        'congestion_overflow': placement_result.get('overflow', 0)
+                    }
+                })
+
+            return {'info': 'Re-ran placement', 'hpwl': placement_result.get('hpwl', 0)}
+
+        except Exception as e:
+            logger.error(f"Placement failed: {e}")
+            return {'info': f'Placement failed: {e}'}
 
     def _rerun_routing(self) -> Dict:
         """Re-run routing"""

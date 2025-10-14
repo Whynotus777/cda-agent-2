@@ -50,8 +50,9 @@ class RewardCalculator:
         Returns:
             Reward value (positive = improvement, negative = degradation)
         """
-        if not action_result.get('success', False):
-            # Failed action gets negative reward
+        # If action explicitly failed, give negative reward
+        if action_result.get('success') is False:
+            # Only penalize if explicitly marked as failed
             return -1.0
 
         metrics_delta = action_result.get('metrics_delta', {})
@@ -126,8 +127,8 @@ class RewardCalculator:
             reward += 2.0  # Bonus for clean timing
 
         # Check if timing is met
-        wns = metrics.get('timing', {}).get('wns', -999)
-        if wns >= 0:
+        wns = metrics.get('timing', {}).get('wns')
+        if wns is not None and wns >= 0:
             reward += 5.0  # Large bonus for meeting timing
 
         return reward

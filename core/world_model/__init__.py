@@ -13,4 +13,25 @@ from .design_parser import DesignParser
 from .rule_engine import RuleEngine
 from .design_state import DesignState
 
-__all__ = ['TechLibrary', 'DesignParser', 'RuleEngine', 'DesignState']
+
+class WorldModel:
+    """
+    Unified interface to all world model components.
+
+    Provides easy access to tech libraries, design parsers, and rule engines.
+    """
+
+    def __init__(self, process_node: str = "7nm"):
+        """
+        Initialize world model.
+
+        Args:
+            process_node: Technology process node (e.g., "7nm", "14nm")
+        """
+        self.process_node = process_node
+        self.tech_library = TechLibrary(process_node=process_node)
+        self.design_parser = DesignParser()
+        self.rule_engine = RuleEngine(process_node=process_node)
+
+
+__all__ = ['WorldModel', 'TechLibrary', 'DesignParser', 'RuleEngine', 'DesignState']
