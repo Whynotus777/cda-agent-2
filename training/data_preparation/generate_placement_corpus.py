@@ -1,0 +1,290 @@
+#!/usr/bin/env python3
+"""
+Placement Specialist Corpus Generator
+
+Generate comprehensive training data for a superhuman placement specialist.
+
+Focus areas:
+- DREAMPlace optimization strategies
+- Placement density and congestion management
+- Wirelength minimization techniques
+- Timing-driven placement
+- Floorplanning principles
+- Cell spreading and legalization
+"""
+
+import json
+import random
+from typing import List, Dict
+from pathlib import Path
+
+
+class PlacementCorpusGenerator:
+    """Generate high-quality placement training examples"""
+
+    def __init__(self):
+        """Initialize generator"""
+        self.examples = []
+
+    def generate_all(self) -> List[Dict]:
+        """Generate complete placement corpus"""
+        print("Generating placement specialist training corpus...")
+
+        # Strategy and principle examples
+        self.examples.extend(self._generate_strategy_examples())
+        self.examples.extend(self._generate_optimization_examples())
+        self.examples.extend(self._generate_dreamplace_examples())
+        self.examples.extend(self._generate_wirelength_examples())
+        self.examples.extend(self._generate_timing_driven_examples())
+        self.examples.extend(self._generate_congestion_examples())
+        self.examples.extend(self._generate_floorplan_examples())
+        self.examples.extend(self._generate_legalization_examples())
+        self.examples.extend(self._generate_problem_solving_examples())
+        self.examples.extend(self._generate_tradeoff_examples())
+
+        print(f"Generated {len(self.examples)} placement training examples")
+        return self.examples
+
+    def _generate_strategy_examples(self) -> List[Dict]:
+        """High-level placement strategies"""
+        return [
+            {
+                "prompt": "What is the primary goal of cell placement in chip design?",
+                "response": "The primary goal of cell placement is to determine the physical coordinates of all standard cells on the chip die to optimize three key metrics: (1) minimize total wirelength to reduce interconnect delay and power, (2) ensure routability by avoiding congestion, and (3) meet timing constraints by placing timing-critical cells strategically. A good placement enables efficient routing and directly impacts the final chip's performance, power, and area (PPA).",
+                "phase": "placement",
+                "category": "fundamentals"
+            },
+            {
+                "prompt": "Why is wirelength minimization important in placement?",
+                "response": "Wirelength minimization is critical because: (1) Shorter wires have lower capacitance and resistance, reducing RC delay and improving timing. (2) Shorter wires consume less dynamic power during switching. (3) Less wire usage reduces routing congestion, making the design more routable. (4) Shorter wires are less susceptible to crosstalk and noise. The half-perimeter wirelength (HPWL) is commonly used as a proxy metric during optimization.",
+                "phase": "placement",
+                "category": "fundamentals"
+            },
+            {
+                "prompt": "Explain the difference between global placement and detailed placement.",
+                "response": "Global placement determines approximate cell positions focusing on wirelength optimization and congestion minimization, but cells may overlap. Detailed placement refines these positions to: (1) remove all overlaps through legalization, (2) align cells to placement rows and sites, (3) fine-tune for wirelength and timing. Modern tools like DREAMPlace combine both phases, using differentiable algorithms for global placement and network flow or dynamic programming for legalization.",
+                "phase": "placement",
+                "category": "fundamentals"
+            },
+            {
+                "prompt": "What is placement density and why does it matter?",
+                "response": "Placement density is the ratio of used area to available area in a region. Target density (typically 0.6-0.8) balances two competing needs: (1) Higher density (0.8+) places cells closer, reducing wirelength but increasing congestion. (2) Lower density (0.5-0.6) provides routing space but increases wirelength. Optimal density depends on design characteristics: logic-heavy designs can tolerate higher density, while interconnect-heavy designs need lower density for routability.",
+                "phase": "placement",
+                "category": "fundamentals"
+            },
+            {
+                "prompt": "How should I approach placement for a high-performance design?",
+                "response": "For high-performance designs: (1) Use timing-driven placement that prioritizes critical paths. (2) Place timing-critical cells close together to minimize path delays. (3) Start with lower density (0.6-0.7) to allow flexibility for buffer insertion and cell resizing. (4) Enable path-based optimization in the placer. (5) Iterate placement with synthesis to fix timing violations early. (6) Consider physical hierarchies to manage complexity. (7) Pay attention to clock network topology during placement.",
+                "phase": "placement",
+                "category": "strategy"
+            },
+            {
+                "prompt": "How should I approach placement for a low-power design?",
+                "response": "For low-power designs: (1) Minimize wirelength aggressively since wire capacitance dominates dynamic power. (2) Use higher density (0.7-0.8) to keep connected cells close. (3) Cluster cells by functional blocks to reduce inter-block communication. (4) Place power-hungry blocks (like ALUs, multipliers) carefully to minimize switching activity on long wires. (5) Consider multi-Vt cell placement strategies. (6) Optimize for total wirelength rather than just HPWL to capture net-by-net power. (7) Enable power-aware placement modes in tools.",
+                "phase": "placement",
+                "category": "strategy"
+            },
+        ]
+
+    def _generate_optimization_examples(self) -> List[Dict]:
+        """Placement optimization techniques"""
+        return [
+            {
+                "prompt": "What optimization objectives should I use in DREAMPlace?",
+                "response": "DREAMPlace supports multiple objectives that you can weight: (1) **Wirelength (HPWL)**: Primary objective, use weight 1.0 for most designs. (2) **Density**: Penalizes overcrowded regions, use weight 0.05-0.1. (3) **Routability**: Estimated congestion cost, use weight 0.0-0.5 depending on congestion risk. (4) **Timing**: Path-based delay optimization (if timing info available), use weight 0.1-0.5. Balance these weights based on your design goals: wirelength-focused (1.0, 0.05, 0.0), congestion-focused (0.5, 0.1, 0.5), balanced (0.8, 0.1, 0.2).",
+                "phase": "placement",
+                "category": "optimization"
+            },
+            {
+                "prompt": "How do I tune placement density for my design?",
+                "response": "Start with target_density=0.7 as a baseline. Then tune based on results: (1) If routing fails with overflow, decrease to 0.65 or 0.6 to create more space. (2) If wirelength is too high and routing succeeds easily, increase to 0.75 or 0.8. (3) For designs with large macros, use lower density (0.5-0.6) to route around them. (4) For uniform logic designs, use higher density (0.75-0.85). (5) Monitor density maps after placement - non-uniform density indicates need for adjustment. (6) Run with multiple densities and compare PPA results.",
+                "phase": "placement",
+                "category": "optimization"
+            },
+            {
+                "prompt": "What is the trade-off between wirelength and routability?",
+                "response": "This is a fundamental placement trade-off: (1) **Minimizing wirelength** packs cells tightly, reducing delay and power but creating routing congestion. (2) **Maximizing routability** spreads cells out, creating routing space but increasing wirelength. Best practice: (a) Start with wirelength-focused placement (weight 1.0), (b) Check routing congestion, (c) If congestion is high (>10% overflow), increase routability weight to 0.3-0.5, (d) Iterate until routing succeeds with acceptable wirelength. Modern placers like DREAMPlace model congestion during optimization to balance both.",
+                "phase": "placement",
+                "category": "optimization"
+            },
+            {
+                "prompt": "How many placement iterations should I run?",
+                "response": "Placement optimization is iterative: (1) **Global placement**: 1000-2000 iterations for convergence. Monitor HPWL - it should decrease and plateau. (2) **Detailed placement**: 100-500 iterations for legalization. Check overlap removal and HPWL degradation (<5% is acceptable). (3) In DREAMPlace, use iteration=2000 for global, iteration=100 for detailed. (4) For large designs (>100K cells), may need 3000-5000 global iterations. (5) Early stopping: if HPWL stops improving for 200 iterations, convergence is reached. (6) Always verify final legality with zero overlaps.",
+                "phase": "placement",
+                "category": "optimization"
+            },
+        ]
+
+    def _generate_dreamplace_examples(self) -> List[Dict]:
+        """DREAMPlace tool-specific examples"""
+        return [
+            {
+                "prompt": "How do I run DREAMPlace for basic placement?",
+                "response": "Basic DREAMPlace workflow:\n\n```python\nimport dreamplace\nimport torch\n\n# Create configuration\nparams = dreamplace.Params()\nparams.input_netlist = 'design.v'\nparams.input_def = 'floorplan.def'\nparams.output_def = 'placed.def'\nparams.target_density = 0.7\nparams.global_place_flag = True\nparams.detailed_place_flag = True\nparams.gpu = True if torch.cuda.is_available() else False\n\n# Run placement\nplacer = dreamplace.Placer(params)\nplacer.run()\n```\n\nKey parameters: target_density controls how tightly cells are packed, global_place_flag enables analytical placement, detailed_place_flag enables legalization, gpu uses GPU acceleration (30x faster than CPU).",
+                "phase": "placement",
+                "category": "dreamplace"
+            },
+            {
+                "prompt": "What DREAMPlace parameters should I tune first?",
+                "response": "Priority tuning order:\n\n1. **target_density** (most important): Start at 0.7, adjust based on routability.\n2. **learning_rate**: Default 0.01 works for most designs. Increase to 0.02 for faster convergence on easy designs, decrease to 0.005 for difficult designs.\n3. **iteration**: Default 2000 for global, 100 for detailed. Increase for large designs.\n4. **gamma**: Weight decay for density, default 0.9 works well.\n5. **wirelength_weight**: Default 1.0 for HPWL-focused, reduce to 0.5-0.8 if congestion is high.\n6. **routability_weight**: Start at 0.0, increase to 0.3-0.5 if routing fails.\n\nAdvanced: num_bins_x/y for density calculation (default 512), gradient_clip for stability (default 100).",
+                "phase": "placement",
+                "category": "dreamplace"
+            },
+            {
+                "prompt": "How does DREAMPlace handle GPU acceleration?",
+                "response": "DREAMPlace uses PyTorch for GPU acceleration: (1) All placement operations (wirelength calculation, density computation, gradient updates) are implemented as differentiable PyTorch operations. (2) On GPU, these operations run in parallel across thousands of cells. (3) Speedup: 30-50x over CPU on ISPD benchmarks. (4) Memory requirement: ~2-4GB GPU RAM for 100K cell designs. (5) Enable with `gpu=True` in config. (6) Mixed mode: global placement on GPU, detailed placement on CPU (default). (7) For designs >500K cells, may need multi-GPU support. (8) Check with torch.cuda.is_available() before enabling.",
+                "phase": "placement",
+                "category": "dreamplace"
+            },
+        ]
+
+    def _generate_wirelength_examples(self) -> List[Dict]:
+        """Wirelength optimization examples"""
+        return [
+            {
+                "prompt": "What is half-perimeter wirelength (HPWL)?",
+                "response": "HPWL is a fast approximation of net wirelength used in placement: (1) For each net, compute the bounding box of all connected pins. (2) HPWL = (max_x - min_x) + (max_y - min_y). (3) For 2-pin nets, HPWL equals Manhattan distance. (4) For multi-pin nets, HPWL underestimates actual routed wirelength by 10-30% but is O(n) to compute. (5) Minimizing total HPWL correlates strongly with minimizing routed wirelength. (6) Used during global placement for fast optimization. (7) More accurate models (Steiner tree, routing estimation) are used in detailed placement.",
+                "phase": "placement",
+                "category": "wirelength"
+            },
+            {
+                "prompt": "How can I reduce wirelength in a clustered design?",
+                "response": "If cells are clustered and wirelength is high: (1) Decrease target density to 0.6 or 0.55 to force spreading. (2) Increase placement area if possible (adjust floorplan). (3) Use stronger density penalty (increase density_weight parameter). (4) Enable routability-driven mode to spread cells into low-density regions. (5) Check for large macros that may be blocking cell spreading - adjust macro placement. (6) Manually partition design into regions and place separately if automatic spreading fails. (7) Rerun synthesis with different optimization to create better netlists. (8) Verify that floorplan has enough core area (utilization <80%).",
+                "phase": "placement",
+                "category": "wirelength"
+            },
+            {
+                "prompt": "What causes high wirelength even after optimization?",
+                "response": "Common causes: (1) **Poor floorplan**: Die shape doesn't match design aspect ratio, forcing long connections. Solution: Adjust floorplan to square or match netlist AR. (2) **Large macros**: Memory blocks create barriers. Solution: Place macros at die edges, create channels. (3) **Bad partitioning**: Logical blocks split physically. Solution: Use hierarchical placement or clustering. (4) **High fanout nets**: Clock, reset have huge HPWL. Solution: Use clock tree aware placement, buffer high fanout nets. (5) **Insufficient area**: Overutilization forces tight packing. Solution: Increase die size or reduce target density. (6) **Netlist structure**: Long logic chains. Solution: Rerun synthesis with better optimization.",
+                "phase": "placement",
+                "category": "wirelength"
+            },
+        ]
+
+    def _generate_timing_driven_examples(self) -> List[Dict]:
+        """Timing-driven placement examples"""
+        return [
+            {
+                "prompt": "What is timing-driven placement?",
+                "response": "Timing-driven placement optimizes for timing rather than just wirelength: (1) Uses slack-based costs - heavily penalizes long paths with negative slack. (2) Places timing-critical cells (on critical paths) close together. (3) Spreads non-critical cells to make room. (4) Requires timing information: SDC constraints, cell delays, net delays. (5) Iterates with timing analysis: place → analyze timing → reoptimize critical paths. (6) DREAMPlace supports timing-driven mode with pre-computed net weights. (7) Typically increases wirelength by 5-15% but improves WNS by 20-50%. (8) Essential for high-performance designs operating at aggressive frequencies.",
+                "phase": "placement",
+                "category": "timing"
+            },
+            {
+                "prompt": "How do I enable timing-driven placement in DREAMPlace?",
+                "response": "Enable timing-driven placement: (1) Run static timing analysis (STA) first to identify critical paths. (2) Generate net weights based on slack: weight = 1.0 + k * max(0, -slack) where k=0.01-0.1. (3) Provide weights to DREAMPlace via timing_weight parameter. (4) Set timing_opt_flag=True. (5) Increase iterations for timing convergence (iteration=3000-5000). (6) Iterate: place → STA → update weights → rerun placement until timing closes. (7) Monitor trade-off: timing improves but wirelength increases. (8) Combine with physical synthesis (buffer insertion, gate sizing) for best results.",
+                "phase": "placement",
+                "category": "timing"
+            },
+        ]
+
+    def _generate_congestion_examples(self) -> List[Dict]:
+        """Congestion and routability examples"""
+        return [
+            {
+                "prompt": "What is routing congestion and how do I detect it?",
+                "response": "Routing congestion occurs when too many wires need to pass through a region: (1) **Detection**: Run global routing after placement. Overflow >0 indicates congestion. (2) **Measurement**: Congestion maps show utilization per gcell - red regions (>100%) are congested. (3) **Causes**: High placement density, poor cell spreading, macro blockages, insufficient routing layers. (4) **Impact**: Routing failures, DRC violations, timing degradation from detours. (5) **Prevention**: Use routability-driven placement, lower target density in congested regions, add blockages around macros, use more metal layers if available.",
+                "phase": "placement",
+                "category": "congestion"
+            },
+            {
+                "prompt": "How do I fix routing congestion during placement?",
+                "response": "Congestion fixes: (1) **Decrease density**: Reduce target_density from 0.7 to 0.6 or 0.55. (2) **Increase routability weight**: Set routability_weight=0.5 in DREAMPlace. (3) **Add routing blockages**: Place halos around congested regions to force spreading. (4) **Adjust macro placement**: Move macros to die edges to open routing channels. (5) **Repartition design**: Use hierarchical placement to separate congested blocks. (6) **Add metal layers**: If physical design rules allow, use additional routing layers. (7) **Modify netlist**: Reduce fanout through buffering, logic restructuring. (8) **Increase die size**: Last resort - area increase reduces congestion but increases cost.",
+                "phase": "placement",
+                "category": "congestion"
+            },
+        ]
+
+    def _generate_floorplan_examples(self) -> List[Dict]:
+        """Floorplanning examples"""
+        return [
+            {
+                "prompt": "What is the relationship between floorplan and placement?",
+                "response": "Floorplan defines the canvas for placement: (1) **Die size**: Must provide enough area for target utilization (70-80%). Formula: die_area = cell_area / target_utilization. (2) **Aspect ratio**: Square (1:1) is ideal for most designs. Rectangular may be needed for I/O constraints. (3) **Core area**: Region where standard cells are placed, inside I/O ring. (4) **Macro placement**: Large blocks (RAMs, analog) placed first in floorplan, standard cells fill around them. (5) **Power grid**: Floorplan includes power stripes that constrain cell placement. (6) **Blockages**: Regions where cells cannot be placed (under macros, routing channels). Good floorplan is critical for successful placement.",
+                "phase": "placement",
+                "category": "floorplan"
+            },
+        ]
+
+    def _generate_legalization_examples(self) -> List[Dict]:
+        """Legalization examples"""
+        return [
+            {
+                "prompt": "What is placement legalization?",
+                "response": "Legalization removes overlaps and aligns cells to valid positions: (1) **Overlap removal**: Global placement allows overlaps for optimization flexibility. Legalization moves cells to remove all overlaps. (2) **Site alignment**: Cells must align to placement grid sites (typically 0.2-0.5μm pitch). (3) **Row alignment**: Cells snap to horizontal placement rows. (4) **Orientation**: Cells oriented correctly (N or FN) for P/N well alignment. (5) **Objectives**: Minimize movement from global positions (preserves wirelength), ensure zero overlaps (legal), maintain density constraints. (6) **Methods**: Network flow (DREAMPlace), detailed placement (ABaCUS), dynamic programming. (7) **Quality**: Good legalization has <5% HPWL degradation from global placement.",
+                "phase": "placement",
+                "category": "legalization"
+            },
+        ]
+
+    def _generate_problem_solving_examples(self) -> List[Dict]:
+        """Problem-solving examples"""
+        return [
+            {
+                "prompt": "DREAMPlace fails with 'HPWL increasing' error. How do I fix this?",
+                "response": "HPWL increasing during optimization indicates divergence: (1) **Reduce learning rate**: Decrease from 0.01 to 0.005 or 0.001 for stability. (2) **Enable gradient clipping**: Set gradient_clip=100 to prevent exploding gradients. (3) **Check floorplan**: Ensure die size is sufficient (utilization <80%). Very small floorplans cause instability. (4) **Simplify objectives**: Disable timing and routability weights initially, optimize HPWL only. (5) **Increase density weight**: Higher density penalty prevents overcrowding. (6) **Check input**: Validate DEF/LEF files are correctly formatted. (7) **Reduce iteration**: Some designs converge with fewer iterations (1000 instead of 2000). (8) **Try CPU mode**: GPU numerical precision issues can cause divergence.",
+                "phase": "placement",
+                "category": "problem_solving"
+            },
+            {
+                "prompt": "Placement results in overlaps after legalization. What went wrong?",
+                "response": "Overlaps after legalization indicate a critical failure: (1) **Check legalization flag**: Ensure detailed_place_flag=True in config. (2) **Verify output**: Parse output DEF and count overlaps programmatically. (3) **Insufficient area**: If utilization >95%, no room for legal placement. Increase die size. (4) **Macro blockages**: Fixed macros may leave insufficient space. Adjust macro placement. (5) **Row definition issues**: Check DEF rows are correctly defined with proper height and spacing. (6) **LEF problems**: Verify cell sizes in LEF match actual standard cells. (7) **Rerun with lower density**: Try target_density=0.5 to create more space for legalization. (8) **Check logs**: DREAMPlace reports legalization success - verify no error messages.",
+                "phase": "placement",
+                "category": "problem_solving"
+            },
+        ]
+
+    def _generate_tradeoff_examples(self) -> List[Dict]:
+        """Design tradeoff examples"""
+        return [
+            {
+                "prompt": "Should I optimize for wirelength or timing?",
+                "response": "The answer depends on your design goals: **Optimize for wirelength when**: (1) Design meets timing with margin, (2) Power is critical concern (shorter wires = less capacitance), (3) Routing is challenging (denser designs). **Optimize for timing when**: (1) Design fails timing analysis, (2) Operating frequency is aggressive, (3) Critical paths have negative slack. **Best practice**: (1) Start with wirelength optimization, (2) Run STA to check timing, (3) If WNS <-50ps, switch to timing-driven mode, (4) If timing passes, keep wirelength-optimized result to minimize power. **Hybrid approach**: Use timing weights only for critical nets (top 10% worst slack), leave others wirelength-optimized.",
+                "phase": "placement",
+                "category": "tradeoffs"
+            },
+            {
+                "prompt": "How do I balance performance, power, and area in placement?",
+                "response": "PPA balance in placement: **Performance**: (1) Use timing-driven placement for critical paths, (2) Lower density (0.6-0.65) for buffer insertion flexibility, (3) Place critical blocks close together. **Power**: (1) Minimize wirelength aggressively (weight=1.0), (2) Higher density (0.7-0.8) keeps cells close, (3) Cluster by function to reduce inter-block wires. **Area**: (1) Higher density (0.75-0.85) uses less die space, (2) Avoid excessive spacing around macros. **Balanced approach**: (1) Start with density=0.7, (2) Run placement + STA + power analysis, (3) If timing fails, reduce density to 0.65, (4) If power is high, increase density to 0.75, (5) Iterate until PPA targets met. No single optimal - requires design-specific tuning.",
+                "phase": "placement",
+                "category": "tradeoffs"
+            },
+        ]
+
+    def save(self, output_path: str):
+        """Save generated corpus to JSONL"""
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_file, 'w') as f:
+            for example in self.examples:
+                f.write(json.dumps(example) + '\n')
+
+        print(f"Saved {len(self.examples)} examples to {output_path}")
+
+
+def main():
+    """Generate placement corpus"""
+    generator = PlacementCorpusGenerator()
+    examples = generator.generate_all()
+
+    # Save to placement training file
+    output_path = "data/training/phase_specific/placement_training_enhanced.jsonl"
+    generator.save(output_path)
+
+    print(f"\n✓ Generated {len(examples)} placement specialist training examples")
+    print(f"✓ Saved to {output_path}")
+
+    # Print statistics
+    categories = {}
+    for ex in examples:
+        cat = ex.get('category', 'general')
+        categories[cat] = categories.get(cat, 0) + 1
+
+    print(f"\nBreakdown by category:")
+    for cat, count in sorted(categories.items()):
+        print(f"  {cat}: {count} examples")
+
+
+if __name__ == "__main__":
+    main()
