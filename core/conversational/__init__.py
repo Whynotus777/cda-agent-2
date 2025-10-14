@@ -9,5 +9,6 @@ from .intent_parser import IntentParser
 from .llm_interface import LLMInterface
 from .conversation_manager import ConversationManager
 from .triage_router import TriageRouter
+from .action_executor import ActionExecutor
 
-__all__ = ['IntentParser', 'LLMInterface', 'ConversationManager', 'TriageRouter']
+__all__ = ['IntentParser', 'LLMInterface', 'ConversationManager', 'TriageRouter', 'ActionExecutor']
