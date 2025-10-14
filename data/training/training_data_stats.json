@@ -1,0 +1,10 @@
+{
+  "total_examples": 1193,
+  "by_source": {
+    "documentation": 41,
+    "verilog_code": 1143,
+    "synthetic": 9
+  },
+  "avg_prompt_length": 58.74685666387259,
+  "avg_response_length": 1670.9203688181055
+}

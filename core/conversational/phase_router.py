@@ -67,6 +67,9 @@ class PhaseRouter:
         self.base_model = "llama3:8b"
         self.supervisor_model = "llama3:70b"
 
+        # Check which specialists are actually available
+        self.available_specialists = self._check_available_specialists()
+
         # Struggle tracking - when to escalate to 70B
         self.struggle_counter = 0
         self.struggle_threshold = 2
@@ -149,6 +152,57 @@ class PhaseRouter:
         ]
 
         logger.info("Initialized PhaseRouter with 8B specialists")
+        logger.info(f"Available specialists: {self._get_available_specialist_names()}")
+
+    def _check_available_specialists(self) -> Dict[DesignPhase, bool]:
+        """
+        Check which specialist models are actually available via Ollama.
+
+        Returns:
+            Dict mapping phase to availability bool
+        """
+        import subprocess
+
+        available = {}
+
+        try:
+            # List available Ollama models
+            result = subprocess.run(
+                ['ollama', 'list'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+
+            if result.returncode == 0:
+                model_list = result.stdout.lower()
+
+                for phase, model_name in self.specialists.items():
+                    # Check if specialist model exists
+                    model_key = model_name.lower()
+                    available[phase] = model_key in model_list
+
+                    if available[phase]:
+                        logger.info(f"✓ {phase.value} specialist available: {model_name}")
+                    else:
+                        logger.debug(f"⊙ {phase.value} specialist not found, will use fallback")
+            else:
+                logger.warning("Could not check Ollama models, assuming no specialists")
+                available = {phase: False for phase in DesignPhase}
+
+        except Exception as e:
+            logger.warning(f"Error checking models: {e}, assuming no specialists")
+            available = {phase: False for phase in DesignPhase}
+
+        return available
+
+    def _get_available_specialist_names(self) -> List[str]:
+        """Get list of available specialist model names"""
+        return [
+            self.specialists[phase]
+            for phase, is_available in self.available_specialists.items()
+            if is_available
+        ]
 
     def route(
         self,
@@ -279,12 +333,14 @@ class PhaseRouter:
 
         Falls back to base 8B if specialist not available.
         """
-        specialist = self.specialists.get(phase, self.base_model)
-
-        # TODO: Check if specialist model actually exists via ollama list
-        # For now, just return the name
-
-        return specialist
+        # Check if specialist is available
+        if self.available_specialists.get(phase, False):
+            specialist = self.specialists.get(phase, self.base_model)
+            logger.debug(f"Using specialist model: {specialist}")
+            return specialist
+        else:
+            logger.debug(f"Specialist for {phase.value} not available, using fallback: {self.base_model}")
+            return self.base_model
 
     def _query_specialist(
         self,
@@ -419,10 +475,18 @@ Draw on your broad expertise to give a thorough answer that addresses the comple
     def get_available_specialists(self) -> List[str]:
         """
         Get list of available specialist models.
-
-        TODO: Actually check ollama for which models exist.
         """
-        return list(self.specialists.values())
+        return self._get_available_specialist_names()
+
+    def reload_specialists(self):
+        """
+        Reload specialist availability.
+
+        Call this after training new specialists.
+        """
+        logger.info("Reloading specialist model availability...")
+        self.available_specialists = self._check_available_specialists()
+        logger.info(f"Available specialists: {self._get_available_specialist_names()}")
 
     def reset_struggle_tracking(self):
         """Reset struggle counter for new conversation."""
