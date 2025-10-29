@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RTL Artifact",
+  "description": "Generated RTL module with metadata",
+  "type": "object",
+  "required": ["artifact_id", "module_name", "rtl_code"],
+  "properties": {
+    "artifact_id": {
+      "type": "string",
+      "description": "Unique identifier for this artifact"
+    },
+    "module_name": {
+      "type": "string",
+      "description": "Verilog module name"
+    },
+    "rtl_code": {
+      "type": "string",
+      "description": "Generated Verilog/SystemVerilog code"
+    },
+    "testbench_code": {
+      "type": "string",
+      "description": "Optional testbench for the module"
+    },
+    "module_type": {
+      "type": "string",
+      "enum": ["fsm", "fifo", "bus_wrapper", "custom", "counter", "register", "decoder"],
+      "description": "Type of module generated"
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Module parameters used for generation",
+      "additionalProperties": true
+    },
+    "ports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "direction": {"enum": ["input", "output", "inout"]},
+          "width": {"type": "integer"},
+          "description": {"type": "string"}
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "syntax_valid": {"type": "boolean"},
+        "lint_clean": {"type": "boolean"},
+        "yosys_output": {"type": "string"},
+        "errors": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "warnings": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "generator": {"type": "string"},
+        "generated_at": {"type": "string", "format": "date-time"},
+        "template_version": {"type": "string"},
+        "documentation": {"type": "string"}
+      }
+    }
+  }
+}

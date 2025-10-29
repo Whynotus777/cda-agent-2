@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Design Intent",
+  "description": "Input specification for RTL design generation",
+  "type": "object",
+  "required": ["intent_id", "description", "intent_type"],
+  "properties": {
+    "intent_id": {
+      "type": "string",
+      "description": "Unique identifier for this design intent"
+    },
+    "intent_type": {
+      "type": "string",
+      "enum": ["module", "constraint", "verification", "script"],
+      "description": "Type of design artifact to generate"
+    },
+    "description": {
+      "type": "string",
+      "description": "Natural language description of what to build"
+    },
+    "module_name": {
+      "type": "string",
+      "description": "Target module name (for RTL generation)"
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Design parameters (widths, depths, etc.)",
+      "additionalProperties": true
+    },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "clock_period_ns": {"type": "number"},
+        "max_power_mw": {"type": "number"},
+        "max_area_um2": {"type": "number"}
+      }
+    },
+    "targets": {
+      "type": "object",
+      "properties": {
+        "optimization_goal": {
+          "type": "string",
+          "enum": ["speed", "area", "power", "balanced"]
+        },
+        "tool": {
+          "type": "string",
+          "enum": ["yosys", "opensta", "dreamplace", "tritonroute"]
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Additional context from prior stages",
+      "properties": {
+        "previous_files": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "tech_library": {"type": "string"},
+        "design_stage": {"type": "string"}
+      }
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Run Request",
+  "description": "Request to execute an EDA tool command",
+  "type": "object",
+  "required": ["request_id", "tool", "command_type"],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "description": "Unique identifier for this run request"
+    },
+    "tool": {
+      "type": "string",
+      "enum": ["yosys", "opensta", "dreamplace", "tritonroute", "verilator"],
+      "description": "EDA tool to execute"
+    },
+    "command_type": {
+      "type": "string",
+      "enum": ["synthesis", "timing_analysis", "placement", "routing", "lint"],
+      "description": "Type of command to run"
+    },
+    "script_content": {
+      "type": "string",
+      "description": "TCL/script content to execute"
+    },
+    "input_files": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "List of input file paths"
+    },
+    "output_files": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Expected output file paths"
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Tool-specific parameters",
+      "additionalProperties": true
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "default": 300,
+      "description": "Maximum execution time"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, validate script without executing"
+    }
+  }
+}

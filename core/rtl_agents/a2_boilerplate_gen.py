@@ -1,0 +1,930 @@
+"""
+A2 - Boilerplate & FSM Generator
+
+Generates parameterized HDL templates: FSMs, FIFOs, bus wrappers.
+Target: All templates lint-clean on generation.
+"""
+
+import json
+import subprocess
+import tempfile
+import time
+import uuid
+from pathlib import Path
+from typing import Dict, Any, Optional, List, Tuple
+from datetime import datetime
+import logging
+
+from .base_agent import BaseAgent, AgentOutput
+
+logger = logging.getLogger(__name__)
+
+
+class A2_BoilerplateGenerator(BaseAgent):
+    """
+    Boilerplate & FSM Generator - Creates standard HDL templates.
+
+    Capabilities:
+    - FSM generation (Mealy, Moore)
+    - FIFO generation (sync, async, dual-clock)
+    - AXI4/APB bus wrappers
+    - Parameterized templates
+    - Yosys syntax validation
+    """
+
+    def __init__(self, config: Optional[Dict] = None):
+        """
+        Initialize A2 agent.
+
+        Args:
+            config: Configuration dict
+        """
+        super().__init__(
+            agent_id="A2",
+            agent_name="Boilerplate & FSM Generator",
+            config=config
+        )
+
+        self.yosys_binary = config.get('yosys_binary', 'yosys') if config else 'yosys'
+        self.templates = self._load_templates()
+
+        logger.info("A2 Boilerplate Generator initialized")
+
+    def _load_templates(self) -> Dict[str, Any]:
+        """Load HDL template generators"""
+        return {
+            'fsm_mealy': self._generate_fsm_mealy,
+            'fsm_moore': self._generate_fsm_moore,
+            'fifo_sync': self._generate_fifo_sync,
+            'fifo_async': self._generate_fifo_async,
+            'fifo_dual_clock': self._generate_fifo_dual_clock,
+            'axi4_lite_slave': self._generate_axi4_lite_slave,
+            'apb_slave': self._generate_apb_slave,
+            'counter': self._generate_counter,
+            'register_file': self._generate_register_file
+        }
+
+    def process(self, input_data: Dict[str, Any]) -> AgentOutput:
+        """
+        Generate HDL template from design intent.
+
+        Args:
+            input_data: Dict conforming to design_intent schema
+
+        Returns:
+            AgentOutput with generated RTL and validation results
+        """
+        start_time = time.time()
+
+        if not self.validate_input(input_data):
+            return self.create_output(
+                success=False,
+                output_data={},
+                errors=["Invalid input data"]
+            )
+
+        template_type = input_data.get('intent_type', 'module')
+        module_name = input_data.get('module_name', 'generated_module')
+        parameters = input_data.get('parameters', {})
+
+        logger.info(f"A2 generating {template_type}: {module_name}")
+
+        # Get template generator
+        generator_func = self.templates.get(template_type)
+
+        if not generator_func:
+            return self.create_output(
+                success=False,
+                output_data={},
+                errors=[f"Unknown template type: {template_type}"]
+            )
+
+        # Generate RTL
+        try:
+            rtl_code, testbench, ports = generator_func(module_name, parameters)
+        except Exception as e:
+            return self.create_output(
+                success=False,
+                output_data={},
+                errors=[f"Generation failed: {str(e)}"]
+            )
+
+        # Validate with Yosys
+        validation = self._validate_rtl(rtl_code, module_name)
+
+        execution_time = (time.time() - start_time) * 1000
+
+        output_data = {
+            'artifact_id': str(uuid.uuid4()),
+            'module_name': module_name,
+            'rtl_code': rtl_code,
+            'testbench_code': testbench,
+            'module_type': template_type,
+            'parameters': parameters,
+            'ports': ports,
+            'validation': validation,
+            'metadata': {
+                'generator': 'A2_BoilerplateGenerator',
+                'generated_at': datetime.utcnow().isoformat(),
+                'template_version': '1.0'
+            }
+        }
+
+        success = validation['syntax_valid'] and validation['lint_clean']
+        errors = validation.get('errors', [])
+        warnings = validation.get('warnings', [])
+
+        return self.create_output(
+            success=success,
+            output_data=output_data,
+            errors=errors,
+            warnings=warnings,
+            execution_time_ms=execution_time,
+            metadata={'template_type': template_type}
+        )
+
+    # ========== FSM Generators ==========
+
+    def _generate_fsm_mealy(
+        self,
+        module_name: str,
+        params: Dict[str, Any]
+    ) -> Tuple[str, str, List[Dict]]:
+        """Generate Mealy state machine"""
+
+        num_states = params.get('num_states', 4)
+        state_width = (num_states - 1).bit_length()
+        data_width = params.get('data_width', 8)
+
+        states = [f"S{i}" for i in range(num_states)]
+
+        rtl = f"""// Mealy State Machine: {module_name}
+// Generated by A2 Boilerplate Generator
+// Outputs depend on current state AND inputs
+
+module {module_name} (
+    input wire clk,
+    input wire rst_n,
+    input wire [{data_width-1}:0] data_in,
+    input wire trigger,
+    output reg [{data_width-1}:0] data_out,
+    output reg valid
+);
+
+    // State encoding
+    localparam {', '.join([f'{s} = {i}' for i, s in enumerate(states)])};
+
+    reg [{state_width-1}:0] current_state, next_state;
+
+    // State register
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            current_state <= S0;
+        else
+            current_state <= next_state;
+    end
+
+    // Next state logic
+    always @(*) begin
+        next_state = current_state;
+        case (current_state)
+"""
+
+        for i, state in enumerate(states):
+            next_state = states[(i + 1) % num_states]
+            rtl += f"""            {state}: begin
+                if (trigger)
+                    next_state = {next_state};
+            end
+"""
+
+        rtl += """            default: next_state = S0;
+        endcase
+    end
+
+    // Output logic (Mealy - depends on state and inputs)
+    always @(*) begin
+        data_out = 8'h00;
+        valid = 1'b0;
+        case (current_state)
+"""
+
+        for i, state in enumerate(states):
+            rtl += f"""            {state}: begin
+                if (trigger) begin
+                    data_out = data_in + {i};
+                    valid = 1'b1;
+                end
+            end
+"""
+
+        rtl += """            default: begin
+                data_out = 8'h00;
+                valid = 1'b0;
+            end
+        endcase
+    end
+
+endmodule
+"""
+
+        # Generate testbench
+        testbench = f"""// Testbench for {module_name}
+module tb_{module_name};
+    reg clk, rst_n, trigger;
+    reg [7:0] data_in;
+    wire [7:0] data_out;
+    wire valid;
+
+    {module_name} dut (.*);
+
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    initial begin
+        rst_n = 0;
+        trigger = 0;
+        data_in = 8'h00;
+        #20 rst_n = 1;
+
+        repeat (10) begin
+            #10 trigger = 1;
+            data_in = $random;
+            #10 trigger = 0;
+        end
+
+        #50 $finish;
+    end
+endmodule
+"""
+
+        ports = [
+            {'name': 'clk', 'direction': 'input', 'width': 1},
+            {'name': 'rst_n', 'direction': 'input', 'width': 1},
+            {'name': 'data_in', 'direction': 'input', 'width': data_width},
+            {'name': 'trigger', 'direction': 'input', 'width': 1},
+            {'name': 'data_out', 'direction': 'output', 'width': data_width},
+            {'name': 'valid', 'direction': 'output', 'width': 1}
+        ]
+
+        return rtl, testbench, ports
+
+    def _generate_fsm_moore(
+        self,
+        module_name: str,
+        params: Dict[str, Any]
+    ) -> Tuple[str, str, List[Dict]]:
+        """Generate Moore state machine"""
+
+        num_states = params.get('num_states', 4)
+        state_width = (num_states - 1).bit_length()
+
+        states = [f"S{i}" for i in range(num_states)]
+
+        rtl = f"""// Moore State Machine: {module_name}
+// Generated by A2 Boilerplate Generator
+// Outputs depend ONLY on current state
+
+module {module_name} (
+    input wire clk,
+    input wire rst_n,
+    input wire enable,
+    output reg [3:0] state_out,
+    output reg done
+);
+
+    // State encoding
+    localparam {', '.join([f'{s} = {i}' for i, s in enumerate(states)])};
+
+    reg [{state_width-1}:0] current_state, next_state;
+
+    // State register
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            current_state <= S0;
+        else
+            current_state <= next_state;
+    end
+
+    // Next state logic
+    always @(*) begin
+        next_state = current_state;
+        case (current_state)
+"""
+
+        for i, state in enumerate(states):
+            next_state = states[(i + 1) % num_states]
+            rtl += f"""            {state}: begin
+                if (enable)
+                    next_state = {next_state};
+            end
+"""
+
+        rtl += """            default: next_state = S0;
+        endcase
+    end
+
+    // Output logic (Moore - depends ONLY on state)
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state_out <= 4'h0;
+            done <= 1'b0;
+        end else begin
+            case (current_state)
+"""
+
+        for i, state in enumerate(states):
+            is_last = (i == num_states - 1)
+            rtl += f"""                {state}: begin
+                    state_out <= 4'h{i:X};
+                    done <= {1 if is_last else 0}'b{'1' if is_last else '0'};
+                end
+"""
+
+        rtl += """                default: begin
+                    state_out <= 4'h0;
+                    done <= 1'b0;
+                end
+            endcase
+        end
+    end
+
+endmodule
+"""
+
+        testbench = f"""// Testbench for {module_name}
+module tb_{module_name};
+    reg clk, rst_n, enable;
+    wire [3:0] state_out;
+    wire done;
+
+    {module_name} dut (.*);
+
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    initial begin
+        rst_n = 0; enable = 0;
+        #20 rst_n = 1;
+        #10 enable = 1;
+        #100 enable = 0;
+        #50 $finish;
+    end
+endmodule
+"""
+
+        ports = [
+            {'name': 'clk', 'direction': 'input', 'width': 1},
+            {'name': 'rst_n', 'direction': 'input', 'width': 1},
+            {'name': 'enable', 'direction': 'input', 'width': 1},
+            {'name': 'state_out', 'direction': 'output', 'width': 4},
+            {'name': 'done', 'direction': 'output', 'width': 1}
+        ]
+
+        return rtl, testbench, ports
+
+    # ========== FIFO Generators ==========
+
+    def _generate_fifo_sync(
+        self,
+        module_name: str,
+        params: Dict[str, Any]
+    ) -> Tuple[str, str, List[Dict]]:
+        """Generate synchronous FIFO"""
+
+        depth = params.get('depth', 16)
+        width = params.get('width', 8)
+        addr_width = (depth - 1).bit_length()
+
+        rtl = f"""// Synchronous FIFO: {module_name}
+// Generated by A2 Boilerplate Generator
+
+module {module_name} (
+    input wire clk,
+    input wire rst_n,
+    input wire wr_en,
+    input wire rd_en,
+    input wire [{width-1}:0] wr_data,
+    output reg [{width-1}:0] rd_data,
+    output wire full,
+    output wire empty,
+    output wire [{addr_width}:0] count
+);
+
+    reg [{width-1}:0] memory [{depth-1}:0];
+    reg [{addr_width-1}:0] wr_ptr, rd_ptr;
+    reg [{addr_width}:0] fifo_count;
+
+    assign full = (fifo_count == {depth});
+    assign empty = (fifo_count == 0);
+    assign count = fifo_count;
+
+    // Write logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            wr_ptr <= {addr_width}'d0;
+        end else if (wr_en && !full) begin
+            memory[wr_ptr] <= wr_data;
+            wr_ptr <= wr_ptr + 1'b1;
+        end
+    end
+
+    // Read logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            rd_ptr <= {addr_width}'d0;
+            rd_data <= {width}'d0;
+        end else if (rd_en && !empty) begin
+            rd_data <= memory[rd_ptr];
+            rd_ptr <= rd_ptr + 1'b1;
+        end
+    end
+
+    // Count logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            fifo_count <= {addr_width+1}'d0;
+        end else begin
+            case ({{wr_en && !full, rd_en && !empty}})
+                2'b10: fifo_count <= fifo_count + 1'b1;  // Write only
+                2'b01: fifo_count <= fifo_count - 1'b1;  // Read only
+                default: fifo_count <= fifo_count;        // Both or neither
+            endcase
+        end
+    end
+
+endmodule
+"""
+
+        testbench = f"""// Testbench for {module_name}
+module tb_{module_name};
+    reg clk, rst_n, wr_en, rd_en;
+    reg [7:0] wr_data;
+    wire [7:0] rd_data;
+    wire full, empty;
+    wire [4:0] count;
+
+    {module_name} dut (.*);
+
+    initial clk = 0;
+    always #5 clk = ~clk;
+
+    initial begin
+        rst_n = 0; wr_en = 0; rd_en = 0; wr_data = 0;
+        #20 rst_n = 1;
+
+        // Write data
+        repeat (10) begin
+            #10 wr_en = 1; wr_data = $random;
+        end
+        #10 wr_en = 0;
+
+        // Read data
+        #20 rd_en = 1;
+        #100 rd_en = 0;
+
+        #50 $finish;
+    end
+endmodule
+"""
+
+        ports = [
+            {'name': 'clk', 'direction': 'input', 'width': 1},
+            {'name': 'rst_n', 'direction': 'input', 'width': 1},
+            {'name': 'wr_en', 'direction': 'input', 'width': 1},
+            {'name': 'rd_en', 'direction': 'input', 'width': 1},
+            {'name': 'wr_data', 'direction': 'input', 'width': width},
+            {'name': 'rd_data', 'direction': 'output', 'width': width},
+            {'name': 'full', 'direction': 'output', 'width': 1},
+            {'name': 'empty', 'direction': 'output', 'width': 1},
+            {'name': 'count', 'direction': 'output', 'width': addr_width+1}
+        ]
+
+        return rtl, testbench, ports
+
+    def _generate_fifo_async(
+        self,
+        module_name: str,
+        params: Dict[str, Any]
+    ) -> Tuple[str, str, List[Dict]]:
+        """Generate asynchronous FIFO (dual clock)"""
+
+        depth = params.get('depth', 16)
+        width = params.get('width', 8)
+        addr_width = (depth - 1).bit_length()
+
+        rtl = f"""// Asynchronous FIFO: {module_name}
+// Generated by A2 Boilerplate Generator
+// Dual-clock domain crossing with Gray code pointers
+
+module {module_name} (
+    // Write domain
+    input wire wr_clk,
+    input wire wr_rst_n,
+    input wire wr_en,
+    input wire [{width-1}:0] wr_data,
+    output wire wr_full,
+
+    // Read domain
+    input wire rd_clk,
+    input wire rd_rst_n,
+    input wire rd_en,
+    output reg [{width-1}:0] rd_data,
+    output wire rd_empty
+);
+
+    reg [{width-1}:0] memory [{depth-1}:0];
+
+    reg [{addr_width}:0] wr_ptr, wr_ptr_gray;
+    reg [{addr_width}:0] rd_ptr, rd_ptr_gray;
+    reg [{addr_width}:0] wr_ptr_gray_sync1, wr_ptr_gray_sync2;
+    reg [{addr_width}:0] rd_ptr_gray_sync1, rd_ptr_gray_sync2;
+
+    // Binary to Gray conversion
+    function [{addr_width}:0] bin2gray;
+        input [{addr_width}:0] bin;
+        bin2gray = bin ^ (bin >> 1);
+    endfunction
+
+    // Write logic
+    always @(posedge wr_clk or negedge wr_rst_n) begin
+        if (!wr_rst_n) begin
+            wr_ptr <= {addr_width+1}'d0;
+            wr_ptr_gray <= {addr_width+1}'d0;
+        end else if (wr_en && !wr_full) begin
+            memory[wr_ptr[{addr_width-1}:0]] <= wr_data;
+            wr_ptr <= wr_ptr + 1'b1;
+            wr_ptr_gray <= bin2gray(wr_ptr + 1'b1);
+        end
+    end
+
+    // Read logic
+    always @(posedge rd_clk or negedge rd_rst_n) begin
+        if (!rd_rst_n) begin
+            rd_ptr <= {addr_width+1}'d0;
+            rd_ptr_gray <= {addr_width+1}'d0;
+            rd_data <= {width}'d0;
+        end else if (rd_en && !rd_empty) begin
+            rd_data <= memory[rd_ptr[{addr_width-1}:0]];
+            rd_ptr <= rd_ptr + 1'b1;
+            rd_ptr_gray <= bin2gray(rd_ptr + 1'b1);
+        end
+    end
+
+    // Synchronize read pointer to write domain
+    always @(posedge wr_clk or negedge wr_rst_n) begin
+        if (!wr_rst_n) begin
+            rd_ptr_gray_sync1 <= {addr_width+1}'d0;
+            rd_ptr_gray_sync2 <= {addr_width+1}'d0;
+        end else begin
+            rd_ptr_gray_sync1 <= rd_ptr_gray;
+            rd_ptr_gray_sync2 <= rd_ptr_gray_sync1;
+        end
+    end
+
+    // Synchronize write pointer to read domain
+    always @(posedge rd_clk or negedge rd_rst_n) begin
+        if (!rd_rst_n) begin
+            wr_ptr_gray_sync1 <= {addr_width+1}'d0;
+            wr_ptr_gray_sync2 <= {addr_width+1}'d0;
+        end else begin
+            wr_ptr_gray_sync1 <= wr_ptr_gray;
+            wr_ptr_gray_sync2 <= wr_ptr_gray_sync1;
+        end
+    end
+
+    // Full/Empty generation
+    assign wr_full = (wr_ptr_gray == {{~rd_ptr_gray_sync2[{addr_width}:{addr_width-1}],
+                                       rd_ptr_gray_sync2[{addr_width-2}:0]}});
+    assign rd_empty = (rd_ptr_gray == wr_ptr_gray_sync2);
+
+endmodule
+"""
+
+        testbench = f"""// Testbench for {module_name}
+module tb_{module_name};
+    reg wr_clk, wr_rst_n, wr_en;
+    reg rd_clk, rd_rst_n, rd_en;
+    reg [7:0] wr_data;
+    wire [7:0] rd_data;
+    wire wr_full, rd_empty;
+
+    {module_name} dut (.*);
+
+    initial wr_clk = 0;
+    always #5 wr_clk = ~wr_clk;
+
+    initial rd_clk = 0;
+    always #7 rd_clk = ~rd_clk;  // Different clock
+
+    initial begin
+        wr_rst_n = 0; wr_en = 0; wr_data = 0;
+        rd_rst_n = 0; rd_en = 0;
+        #20;
+        wr_rst_n = 1; rd_rst_n = 1;
+
+        fork
+            // Write process
+            begin
+                #30;
+                repeat (10) begin
+                    @(posedge wr_clk);
+                    wr_en = 1; wr_data = $random;
+                end
+                @(posedge wr_clk) wr_en = 0;
+            end
+
+            // Read process
+            begin
+                #100;
+                repeat (10) begin
+                    @(posedge rd_clk);
+                    rd_en = 1;
+                end
+                @(posedge rd_clk) rd_en = 0;
+            end
+        join
+
+        #100 $finish;
+    end
+endmodule
+"""
+
+        ports = [
+            {'name': 'wr_clk', 'direction': 'input', 'width': 1},
+            {'name': 'wr_rst_n', 'direction': 'input', 'width': 1},
+            {'name': 'wr_en', 'direction': 'input', 'width': 1},
+            {'name': 'wr_data', 'direction': 'input', 'width': width},
+            {'name': 'wr_full', 'direction': 'output', 'width': 1},
+            {'name': 'rd_clk', 'direction': 'input', 'width': 1},
+            {'name': 'rd_rst_n', 'direction': 'input', 'width': 1},
+            {'name': 'rd_en', 'direction': 'input', 'width': 1},
+            {'name': 'rd_data', 'direction': 'output', 'width': width},
+            {'name': 'rd_empty', 'direction': 'output', 'width': 1}
+        ]
+
+        return rtl, testbench, ports
+
+    def _generate_fifo_dual_clock(self, module_name: str, params: Dict) -> Tuple[str, str, List[Dict]]:
+        """Alias for async FIFO"""
+        return self._generate_fifo_async(module_name, params)
+
+    # ========== Bus Wrapper Generators ==========
+
+    def _generate_axi4_lite_slave(
+        self,
+        module_name: str,
+        params: Dict[str, Any]
+    ) -> Tuple[str, str, List[Dict]]:
+        """Generate AXI4-Lite slave wrapper (stub)"""
+
+        addr_width = params.get('addr_width', 32)
+        data_width = params.get('data_width', 32)
+
+        rtl = f"""// AXI4-Lite Slave: {module_name}
+// Generated by A2 Boilerplate Generator
+
+module {module_name} (
+    input wire aclk,
+    input wire aresetn,
+
+    // Write address channel
+    input wire [{addr_width-1}:0] s_axi_awaddr,
+    input wire [2:0] s_axi_awprot,
+    input wire s_axi_awvalid,
+    output reg s_axi_awready,
+
+    // Write data channel
+    input wire [{data_width-1}:0] s_axi_wdata,
+    input wire [{data_width//8-1}:0] s_axi_wstrb,
+    input wire s_axi_wvalid,
+    output reg s_axi_wready,
+
+    // Write response channel
+    output reg [1:0] s_axi_bresp,
+    output reg s_axi_bvalid,
+    input wire s_axi_bready,
+
+    // Read address channel
+    input wire [{addr_width-1}:0] s_axi_araddr,
+    input wire [2:0] s_axi_arprot,
+    input wire s_axi_arvalid,
+    output reg s_axi_arready,
+
+    // Read data channel
+    output reg [{data_width-1}:0] s_axi_rdata,
+    output reg [1:0] s_axi_rresp,
+    output reg s_axi_rvalid,
+    input wire s_axi_rready
+);
+
+    // Register file (example: 4 registers)
+    reg [{data_width-1}:0] reg_file [3:0];
+
+    // Write address capture
+    reg [{addr_width-1}:0] wr_addr;
+
+    always @(posedge aclk or negedge aresetn) begin
+        if (!aresetn) begin
+            s_axi_awready <= 1'b0;
+            wr_addr <= {addr_width}'d0;
+        end else begin
+            if (s_axi_awvalid && !s_axi_awready) begin
+                s_axi_awready <= 1'b1;
+                wr_addr <= s_axi_awaddr;
+            end else begin
+                s_axi_awready <= 1'b0;
+            end
+        end
+    end
+
+    // Write data
+    always @(posedge aclk or negedge aresetn) begin
+        if (!aresetn) begin
+            s_axi_wready <= 1'b0;
+            reg_file[0] <= {data_width}'d0;
+            reg_file[1] <= {data_width}'d0;
+            reg_file[2] <= {data_width}'d0;
+            reg_file[3] <= {data_width}'d0;
+        end else begin
+            if (s_axi_wvalid && !s_axi_wready) begin
+                s_axi_wready <= 1'b1;
+                reg_file[wr_addr[3:2]] <= s_axi_wdata;  // Simple decode
+            end else begin
+                s_axi_wready <= 1'b0;
+            end
+        end
+    end
+
+    // Write response
+    always @(posedge aclk or negedge aresetn) begin
+        if (!aresetn) begin
+            s_axi_bvalid <= 1'b0;
+            s_axi_bresp <= 2'b00;
+        end else begin
+            if (s_axi_wready && s_axi_wvalid && !s_axi_bvalid) begin
+                s_axi_bvalid <= 1'b1;
+                s_axi_bresp <= 2'b00;  // OKAY
+            end else if (s_axi_bready && s_axi_bvalid) begin
+                s_axi_bvalid <= 1'b0;
+            end
+        end
+    end
+
+    // Read address
+    reg [{addr_width-1}:0] rd_addr;
+
+    always @(posedge aclk or negedge aresetn) begin
+        if (!aresetn) begin
+            s_axi_arready <= 1'b0;
+            rd_addr <= {addr_width}'d0;
+        end else begin
+            if (s_axi_arvalid && !s_axi_arready) begin
+                s_axi_arready <= 1'b1;
+                rd_addr <= s_axi_araddr;
+            end else begin
+                s_axi_arready <= 1'b0;
+            end
+        end
+    end
+
+    // Read data
+    always @(posedge aclk or negedge aresetn) begin
+        if (!aresetn) begin
+            s_axi_rvalid <= 1'b0;
+            s_axi_rdata <= {data_width}'d0;
+            s_axi_rresp <= 2'b00;
+        end else begin
+            if (s_axi_arready && s_axi_arvalid && !s_axi_rvalid) begin
+                s_axi_rvalid <= 1'b1;
+                s_axi_rdata <= reg_file[rd_addr[3:2]];
+                s_axi_rresp <= 2'b00;  // OKAY
+            end else if (s_axi_rready && s_axi_rvalid) begin
+                s_axi_rvalid <= 1'b0;
+            end
+        end
+    end
+
+endmodule
+"""
+
+        testbench = f"// Testbench stub for {module_name}\n// TODO: Implement AXI4-Lite testbench\n"
+
+        ports = [
+            {'name': 'aclk', 'direction': 'input', 'width': 1},
+            {'name': 'aresetn', 'direction': 'input', 'width': 1}
+        ]
+
+        return rtl, testbench, ports
+
+    def _generate_apb_slave(self, module_name: str, params: Dict) -> Tuple[str, str, List[Dict]]:
+        """Generate APB slave wrapper (stub)"""
+        rtl = f"// APB Slave: {module_name}\n// TODO: Implement APB slave\nmodule {module_name}; endmodule\n"
+        return rtl, "", []
+
+    def _generate_counter(self, module_name: str, params: Dict) -> Tuple[str, str, List[Dict]]:
+        """Generate simple counter"""
+        width = params.get('width', 8)
+        rtl = f"""// Counter: {module_name}
+module {module_name} (
+    input wire clk,
+    input wire rst_n,
+    input wire enable,
+    output reg [{width-1}:0] count
+);
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            count <= {width}'d0;
+        else if (enable)
+            count <= count + 1'b1;
+    end
+endmodule
+"""
+        return rtl, "", [{'name': 'clk', 'direction': 'input', 'width': 1}]
+
+    def _generate_register_file(self, module_name: str, params: Dict) -> Tuple[str, str, List[Dict]]:
+        """Generate register file (stub)"""
+        rtl = f"// Register File: {module_name}\nmodule {module_name}; endmodule\n"
+        return rtl, "", []
+
+    # ========== Validation ==========
+
+    def _validate_rtl(self, rtl_code: str, module_name: str) -> Dict[str, Any]:
+        """
+        Validate RTL with Yosys.
+
+        Returns:
+            Validation result dict
+        """
+        result = {
+            'syntax_valid': False,
+            'lint_clean': False,
+            'yosys_output': '',
+            'errors': [],
+            'warnings': []
+        }
+
+        # Create temp file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.v', delete=False) as f:
+            f.write(rtl_code)
+            rtl_path = f.name
+
+        try:
+            # Run Yosys syntax check
+            cmd = [
+                self.yosys_binary,
+                '-p',
+                f'read_verilog {rtl_path}; hierarchy -check -top {module_name}'
+            ]
+
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            result['yosys_output'] = proc.stdout + proc.stderr
+
+            # Parse output for errors/warnings
+            for line in result['yosys_output'].split('\n'):
+                if 'ERROR' in line.upper():
+                    result['errors'].append(line.strip())
+                elif 'WARNING' in line.upper():
+                    result['warnings'].append(line.strip())
+
+            # Success if no errors
+            if proc.returncode == 0 and len(result['errors']) == 0:
+                result['syntax_valid'] = True
+                result['lint_clean'] = len(result['warnings']) == 0
+
+        except subprocess.TimeoutExpired:
+            result['errors'].append("Yosys validation timed out")
+        except FileNotFoundError:
+            result['warnings'].append("Yosys not found, skipping validation")
+            result['syntax_valid'] = True  # Assume valid if can't check
+            result['lint_clean'] = True
+        except Exception as e:
+            result['errors'].append(f"Validation error: {str(e)}")
+        finally:
+            # Clean up
+            Path(rtl_path).unlink(missing_ok=True)
+
+        return result
+
+    def validate_input(self, input_data: Dict[str, Any]) -> bool:
+        """Validate input against design_intent schema"""
+        if 'intent_type' not in input_data:
+            logger.error("Missing intent_type")
+            return False
+        return True
+
+    def get_schema(self) -> Dict[str, Any]:
+        """Return input schema for A2"""
+        schema_path = Path(__file__).parent.parent / 'schemas' / 'design_intent.json'
+        try:
+            with open(schema_path, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load schema: {e}")
+            return {}

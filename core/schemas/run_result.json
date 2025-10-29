@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Run Result",
+  "description": "Result from EDA tool execution",
+  "type": "object",
+  "required": ["request_id", "success", "timestamp"],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "description": "Corresponding request ID"
+    },
+    "success": {
+      "type": "boolean",
+      "description": "Whether execution succeeded"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Execution timestamp"
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Tool exit code"
+    },
+    "stdout": {
+      "type": "string",
+      "description": "Standard output"
+    },
+    "stderr": {
+      "type": "string",
+      "description": "Standard error"
+    },
+    "execution_time_seconds": {
+      "type": "number",
+      "description": "Wall clock time"
+    },
+    "generated_files": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Files created by the tool"
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Extracted metrics (timing, area, power, etc.)",
+      "additionalProperties": true
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "severity": {"type": "string", "enum": ["error", "warning", "info"]},
+          "message": {"type": "string"},
+          "line": {"type": "integer"},
+          "file": {"type": "string"}
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}

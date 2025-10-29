@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Constraint Set",
+  "description": "Generated SDC/timing constraints",
+  "type": "object",
+  "required": ["constraint_id", "format", "constraints"],
+  "properties": {
+    "constraint_id": {
+      "type": "string",
+      "description": "Unique identifier for this constraint set"
+    },
+    "format": {
+      "type": "string",
+      "enum": ["sdc", "tcl", "xdc"],
+      "description": "Constraint file format"
+    },
+    "constraints": {
+      "type": "string",
+      "description": "Generated constraint file content"
+    },
+    "design_name": {
+      "type": "string",
+      "description": "Target design name"
+    },
+    "clock_specs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "clock_name": {"type": "string"},
+          "period_ns": {"type": "number"},
+          "frequency_mhz": {"type": "number"},
+          "source_pin": {"type": "string"},
+          "duty_cycle": {"type": "number", "default": 0.5}
+        }
+      }
+    },
+    "io_delays": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "port_name": {"type": "string"},
+          "direction": {"enum": ["input", "output"]},
+          "delay_ns": {"type": "number"},
+          "clock_ref": {"type": "string"}
+        }
+      }
+    },
+    "timing_exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object"},
+        "properties": {
+          "exception_type": {"enum": ["false_path", "multicycle", "max_delay"]},
+          "from_pin": {"type": "string"},
+          "to_pin": {"type": "string"},
+          "value": {"type": "number"}
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "sta_pass": {"type": "boolean"},
+        "wns": {"type": "number"},
+        "tns": {"type": "number"},
+        "errors": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "generated_at": {"type": "string", "format": "date-time"},
+        "generator_version": {"type": "string"},
+        "target_tool": {"type": "string"}
+      }
+    }
+  }
+}

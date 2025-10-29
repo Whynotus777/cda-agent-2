@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Fix Proposal",
+  "description": "Proposed code fix for lint/CDC issues",
+  "type": "object",
+  "required": ["proposal_id", "issue_id", "fix_type"],
+  "properties": {
+    "proposal_id": {
+      "type": "string",
+      "description": "Unique identifier for this fix proposal"
+    },
+    "issue_id": {
+      "type": "string",
+      "description": "ID of the issue being fixed"
+    },
+    "fix_type": {
+      "type": "string",
+      "enum": ["replacement", "insertion", "deletion", "refactor"],
+      "description": "Type of fix proposed"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Confidence in this fix (0.0-1.0)"
+    },
+    "file": {
+      "type": "string",
+      "description": "File to be modified"
+    },
+    "line_start": {
+      "type": "integer",
+      "description": "Starting line number"
+    },
+    "line_end": {
+      "type": "integer",
+      "description": "Ending line number"
+    },
+    "original_code": {
+      "type": "string",
+      "description": "Original code to be replaced"
+    },
+    "fixed_code": {
+      "type": "string",
+      "description": "Proposed fixed code"
+    },
+    "diff": {
+      "type": "string",
+      "description": "Unified diff format"
+    },
+    "explanation": {
+      "type": "string",
+      "description": "Human-readable explanation of the fix"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["syntax", "semantic", "cdc", "lint", "style", "optimization"]
+    },
+    "auto_applicable": {
+      "type": "boolean",
+      "description": "Whether this fix can be auto-applied safely"
+    },
+    "test_required": {
+      "type": "boolean",
+      "description": "Whether testing is required after applying"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "additionalProperties": true
+    }
+  }
+}
