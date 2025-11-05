@@ -61,7 +61,9 @@ class A2_BoilerplateGenerator(BaseAgent):
             'axi4_lite_slave': self._generate_axi4_lite_slave,
             'apb_slave': self._generate_apb_slave,
             'counter': self._generate_counter,
-            'register_file': self._generate_register_file
+            'register_file': self._generate_register_file,
+            'shift_register': self._generate_shift_register,
+            'clock_divider': self._generate_clock_divider
         }
 
     def process(self, input_data: Dict[str, Any]) -> AgentOutput:
@@ -911,6 +913,132 @@ endmodule
             Path(rtl_path).unlink(missing_ok=True)
 
         return result
+
+    def _generate_shift_register(
+        self,
+        module_name: str,
+        params: Dict[str, Any]
+    ) -> Tuple[str, str, List[Dict]]:
+        """
+        Generate shift register template
+
+        Args:
+            module_name: Name of the module
+            params: Parameters (width, direction)
+
+        Returns:
+            (rtl_code, description, ports)
+        """
+        width = params.get('width', 8)
+        direction = params.get('direction', 'msb_first')
+
+        if direction == 'msb_first':
+            shift_logic = f"shift_reg <= {{shift_reg[{width-2}:0], serial_in}};"
+            serial_out = f"shift_reg[{width-1}]"
+        else:  # lsb_first
+            shift_logic = f"shift_reg <= {{serial_in, shift_reg[{width-1}:1]}};"
+            serial_out = "shift_reg[0]"
+
+        rtl = f'''// Shift Register ({direction})
+module {module_name} (
+    input wire clk,
+    input wire rst_n,
+    input wire enable,
+    input wire load,
+    input wire [{width-1}:0] parallel_in,
+    input wire serial_in,
+    output wire serial_out,
+    output wire [{width-1}:0] parallel_out
+);
+
+    reg [{width-1}:0] shift_reg;
+
+    assign serial_out = {serial_out};
+    assign parallel_out = shift_reg;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            shift_reg <= {width}'d0;
+        end else if (load) begin
+            shift_reg <= parallel_in;
+        end else if (enable) begin
+            {shift_logic}
+        end
+    end
+
+endmodule
+'''
+
+        ports = [
+            {'name': 'clk', 'direction': 'input', 'width': 1},
+            {'name': 'rst_n', 'direction': 'input', 'width': 1},
+            {'name': 'enable', 'direction': 'input', 'width': 1},
+            {'name': 'load', 'direction': 'input', 'width': 1},
+            {'name': 'parallel_in', 'direction': 'input', 'width': width},
+            {'name': 'serial_in', 'direction': 'input', 'width': 1},
+            {'name': 'serial_out', 'direction': 'output', 'width': 1},
+            {'name': 'parallel_out', 'direction': 'output', 'width': width}
+        ]
+
+        return rtl, f"Shift Register ({width}-bit, {direction})", ports
+
+    def _generate_clock_divider(
+        self,
+        module_name: str,
+        params: Dict[str, Any]
+    ) -> Tuple[str, str, List[Dict]]:
+        """
+        Generate clock divider template
+
+        Args:
+            module_name: Name of the module
+            params: Parameters (div_width)
+
+        Returns:
+            (rtl_code, description, ports)
+        """
+        div_width = params.get('div_width', 8)
+
+        rtl = f'''// Clock Divider
+module {module_name} (
+    input wire clk,
+    input wire rst_n,
+    input wire enable,
+    input wire [{div_width-1}:0] divisor,
+    output reg clk_out
+);
+
+    reg [{div_width-1}:0] counter;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            counter <= {div_width}'d0;
+            clk_out <= 1'b0;
+        end else if (enable) begin
+            if (counter >= divisor) begin
+                counter <= {div_width}'d0;
+                clk_out <= ~clk_out;
+            end else begin
+                counter <= counter + 1'b1;
+            end
+        end else begin
+            counter <= {div_width}'d0;
+            clk_out <= 1'b0;
+        end
+    end
+
+endmodule
+'''
+
+        ports = [
+            {'name': 'clk', 'direction': 'input', 'width': 1},
+            {'name': 'rst_n', 'direction': 'input', 'width': 1},
+            {'name': 'enable', 'direction': 'input', 'width': 1},
+            {'name': 'divisor', 'direction': 'input', 'width': div_width},
+            {'name': 'clk_out', 'direction': 'output', 'width': 1}
+        ]
+
+        return rtl, f"Clock Divider ({div_width}-bit divisor)", ports
 
     def validate_input(self, input_data: Dict[str, Any]) -> bool:
         """Validate input against design_intent schema"""
