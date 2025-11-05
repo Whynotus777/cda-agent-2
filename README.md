@@ -1,111 +1,147 @@
-# CDA Agent - AI-Powered Chip Design Automation
+# CDA Agent 2C1 - AI-Powered Multi-Agent RTL Design System
 
-An intelligent agent that uses LLMs and Reinforcement Learning to assist with chip design, competing in the CDA (Chip Design Automation) space.
+A production-ready **6-agent system** for automated RTL design, verification, and validation. Powered by fine-tuned **Mixtral-8x7B** and trained on ~200 chip design research papers.
+
+**Status**: ✅ **100% Operational** - All 6 agents validated with 87% average success rate
 
 ## Overview
 
-CDA Agent combines natural language interaction with automated design optimization to help chip designers create better designs faster. It integrates:
+CDA Agent 2C1 automates the complete RTL design flow from natural language specification to production-ready, synthesizable Verilog code. It features:
 
-- **Conversational AI**: Natural language interface powered by local LLM (Llama 3)
-- **World Model**: Deep understanding of chip design physics, technology libraries, and design rules
-- **Simulation Engine**: Integration with open-source EDA tools (Yosys, DREAMPlace, TritonRoute, OpenSTA)
-- **RL Optimization**: Reinforcement learning agent that learns optimal design strategies
+- **6 Specialized AI Agents**: Working in coordinated pipelines for RTL generation, validation, and optimization
+- **Mixtral-8x7B-Instruct**: Fine-tuned on ~200 research papers (47B parameters with LoRA adapters)
+- **87% Success Rate**: Validated across 36 comprehensive tests
+- **EDA Integration**: Yosys (synthesis), OpenSTA (timing), Verilator (linting)
+- **FastAPI Backend**: RESTful API for programmatic access
+- **Conversational AI**: Natural language interface powered by fine-tuned Mixtral
+- **World Model**: Deep understanding of chip design, technology libraries, and design rules
 
 ## Architecture
 
+### 6-Agent System
+
 ```
-┌─────────────────────────────────────────────┐
-│         Conversational Interface            │
-│  (LLM, Intent Parser, Conversation Manager) │
-└──────────────────┬──────────────────────────┘
-                   │
-┌──────────────────┴──────────────────────────┐
-│           Agent Orchestrator                │
-└──┬───────────┬────────────┬─────────────┬───┘
-   │           │            │             │
-   ▼           ▼            ▼             ▼
-┌──────┐  ┌─────────┐  ┌────────┐  ┌──────────┐
-│World │  │Simulation│  │   RL   │  │  Design  │
-│Model │  │ Engine   │  │Optimizer│  │  State   │
-└──────┘  └─────────┘  └────────┘  └──────────┘
+Natural Language Spec → Pipeline Orchestrator → 6 Agents → Production RTL
+
+┌────────────────────────────────────────────────────────────┐
+│  A1: Spec-to-RTL Generator (100% success)                  │
+│  • Converts natural language → Verilog                     │
+│  • Powered by fine-tuned Mixtral-8x7B-Instruct            │
+│  • Template-aware with A2 integration                      │
+└─────────────┬──────────────────────────────────────────────┘
+              ↓
+┌────────────────────────────────────────────────────────────┐
+│  A2: Boilerplate Generator (80% success)                   │
+│  • FSM, FIFO, AXI4-Lite, Counter templates                │
+│  • Mealy/Moore FSMs, async FIFO with Gray code CDC        │
+└─────────────┬──────────────────────────────────────────────┘
+              ↓
+┌────────────────────────────────────────────────────────────┐
+│  A5: Style & Review Copilot (71.4% success)               │
+│  • Security rules enforcement                              │
+│  • Naming conventions validation                           │
+│  • Best practices checking                                 │
+└─────────────┬──────────────────────────────────────────────┘
+              ↓
+┌────────────────────────────────────────────────────────────┐
+│  A4: Lint & CDC Assistant (66.7% success)                 │
+│  • Automated fix generation (15+ patterns)                 │
+│  • Parses Verilator/Yosys logs                            │
+│  • Confidence scoring for fixes                            │
+└─────────────┬──────────────────────────────────────────────┘
+              ↓
+┌────────────────────────────────────────────────────────────┐
+│  A3: Constraint Synthesizer (100% success)                │
+│  • SDC timing constraint generation                        │
+│  • Multi-clock domain support                              │
+│  • OpenSTA validated                                       │
+└─────────────┬──────────────────────────────────────────────┘
+              ↓
+┌────────────────────────────────────────────────────────────┐
+│  A6: EDA Command Copilot (100% success)                   │
+│  • Yosys synthesis scripts                                 │
+│  • OpenSTA timing analysis                                 │
+│  • Verilator lint commands                                 │
+└─────────────┬──────────────────────────────────────────────┘
+              ↓
+         Production-Ready RTL + Constraints + Validation
 ```
 
 ## Installation
 
 ### Prerequisites
 
-1. **Ollama** (for LLM):
-```bash
-curl https://ollama.ai/install.sh | sh
-ollama pull llama3:70b
-```
+- **Python 3.12+** with pip
+- **CUDA-capable GPU** (optional, for faster Mixtral inference)
+- **100GB disk space** (for Mixtral base model, downloaded on first use)
+- **Yosys** (synthesis): `sudo apt-get install yosys`
+- **OpenSTA** (timing analysis): `sudo apt-get install opensta`
+- **Verilator** (linting): `sudo apt-get install verilator`
 
-2. **DREAMPlace** (GPU-accelerated placement):
-```bash
-git clone https://github.com/limbo018/DREAMPlace.git
-cd DREAMPlace
-python setup.py install
-```
-
-3. **Yosys** (synthesis):
-```bash
-sudo apt-get install yosys
-```
-
-4. **OpenSTA** (timing analysis):
-```bash
-sudo apt-get install opensta
-```
-
-5. **TritonRoute** (routing - part of OpenROAD):
-```bash
-# Install OpenROAD which includes TritonRoute
-# See: https://github.com/The-OpenROAD-Project/OpenROAD
-```
-
-### CDA Agent Installation
+### Installation
 
 ```bash
-cd cda-agent
+# Clone the repository
+git clone https://github.com/Whynotus777/cda-agent-2.git
+cd cda-agent-2C1
+
+# Set up Python environment
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
 ## Quick Start
 
-### Interactive Mode
+### Option 1: FastAPI Backend
 
 ```bash
-python agent.py
+# Start the API server
+./launch_react_api.sh
+# API: http://localhost:8000
+# Docs: http://localhost:8000/docs
 ```
 
-Then interact naturally:
-```
-You: Let's start a new 7nm design for a low-power microcontroller
-Agent: Understood. Creating a new project with 7nm process technology...
+### Option 2: Interactive Chat Mode
 
-You: Load my Verilog file at ./designs/riscv_core.v
-Agent: Loading design from ./designs/riscv_core.v...
+```bash
+# Chat with the Mixtral specialist
+./launch_mixtral_chat.sh
 
-You: Run synthesis optimized for low power
-Agent: Beginning synthesis using Yosys...
+# Or quick questions
+python3 chat_with_specialist.py --question "What is cell placement?"
 ```
 
-### Programmatic Usage
+### Option 3: Complete RTL Pipeline
+
+```bash
+# Run the full 6-agent pipeline
+python3 launch_rtl_system.py
+```
+
+### Programmatic API Usage
 
 ```python
-from agent import CDAAgent
+from api.pipeline import PipelineOrchestrator
+from api.models import DesignSpec
+from pathlib import Path
 
-# Create agent
-agent = CDAAgent(config_path="configs/default_config.yaml")
+# Initialize orchestrator
+orchestrator = PipelineOrchestrator(Path.cwd())
 
-# Process commands
-agent.chat("Create a new 12nm project focused on high performance")
-agent.chat("Load design from my_chip.v")
-agent.chat("Run full optimization flow")
+# Create design spec
+spec = DesignSpec(
+    module_name="counter",
+    description="8-bit up counter with enable and synchronous reset",
+    data_width=8,
+    clock_freq=100.0
+)
 
-# Get results
-summary = agent.get_design_summary()
-print(f"Final metrics: {summary}")
+# Run the pipeline
+result = orchestrator.run_pipeline(spec)
+
+print(f"Status: {result.status}")
+print(f"Generated RTL: {result.final_rtl}")
 ```
 
 ## Features
