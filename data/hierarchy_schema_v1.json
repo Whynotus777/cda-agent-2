@@ -1,0 +1,181 @@
+{
+  "schema_version": "hierarchy.v1",
+  "labels": {
+    "L1": [
+      "Sequential",
+      "Combinational",
+      "Interface",
+      "TimingClocking",
+      "CDC",
+      "EdgeDetect",
+      "Verification"
+    ],
+    "L2": {
+      "Sequential": [
+        "FSM",
+        "Controller",
+        "Counter",
+        "ShiftRegister",
+        "Memory"
+      ],
+      "Combinational": [
+        "Arithmetic",
+        "MuxDemux",
+        "Codecs",
+        "Logic",
+        "Glue"
+      ],
+      "Interface": [
+        "Protocol"
+      ],
+      "TimingClocking": [
+        "Clocking",
+        "Reset"
+      ],
+      "CDC": [
+        "Synchronizers"
+      ],
+      "EdgeDetect": [
+        "Edge"
+      ],
+      "Verification": [
+        "Testbench",
+        "Formal"
+      ]
+    },
+    "L3": {
+      "Sequential/FSM": [
+        "Mealy",
+        "Moore",
+        "SequenceDetector",
+        "Handshake",
+        "Other"
+      ],
+      "Sequential/Controller": [
+        "Pipeline",
+        "Arbiter",
+        "DMA",
+        "CacheCtrl",
+        "BusCtrl",
+        "Other"
+      ],
+      "Sequential/Counter": [
+        "Up",
+        "Down",
+        "UpDown",
+        "WithLoad",
+        "WithEnable",
+        "Saturating",
+        "Other"
+      ],
+      "Sequential/ShiftRegister": [
+        "SISO",
+        "SIPO",
+        "PISO",
+        "PIPO",
+        "Bidirectional",
+        "Universal"
+      ],
+      "Sequential/Memory": [
+        "RegisterFile",
+        "FIFO_Sync",
+        "FIFO_Async",
+        "LIFO",
+        "RAM_SinglePort",
+        "RAM_DualPort",
+        "ROM",
+        "CAM"
+      ],
+      "Combinational/Arithmetic": [
+        "Adder",
+        "Subtractor",
+        "Multiplier",
+        "Divider",
+        "ALU",
+        "Comparator",
+        "Bitwise"
+      ],
+      "Combinational/MuxDemux": [
+        "Multiplexer",
+        "Demultiplexer"
+      ],
+      "Combinational/Codecs": [
+        "Decoder",
+        "Encoder",
+        "PriorityEncoder"
+      ],
+      "Combinational/Logic": [
+        "Gates",
+        "Parity",
+        "Other"
+      ],
+      "Combinational/Glue": [
+        "Adapter",
+        "Wrapper",
+        "Bridge"
+      ],
+      "Interface/Protocol": [
+        "AXI4",
+        "AXI4_Lite",
+        "AXI_Stream",
+        "APB",
+        "UART_Tx",
+        "UART_Rx",
+        "SPI_Master",
+        "SPI_Slave",
+        "I2C_Controller",
+        "I2C_Target",
+        "Wishbone"
+      ],
+      "TimingClocking/Clocking": [
+        "ClockDivider",
+        "BaudGen",
+        "PLLStub",
+        "ClockGater"
+      ],
+      "TimingClocking/Reset": [
+        "SyncReset",
+        "AsyncReset"
+      ],
+      "CDC/Synchronizers": [
+        "TwoFFSync",
+        "PulseSync",
+        "AsyncFIFO"
+      ],
+      "EdgeDetect/Edge": [
+        "RiseDetect",
+        "FallDetect",
+        "BothEdge"
+      ],
+      "Verification/Testbench": [
+        "SimulationSV",
+        "Cocotb"
+      ],
+      "Verification/Formal": [
+        "SBY_ResetSafety",
+        "SBY_OneHot",
+        "SBY_CustomSet"
+      ]
+    }
+  },
+  "labeling_hints_regex": {
+    "fsm_core": "(?i)typedef\\s+enum|\\bcase\\s*\\(",
+    "fsm_sequence": "(?i)sequence|pattern\\s*'?[01]{3,}|overlap",
+    "handshake": "(?i)req\\s*/?\\s*ack|valid\\s*/?\\s*ready|four[-_ ]phase",
+    "counter": "(?i)count|\\+\\s*1|\\-\\s*1|increment|decrement",
+    "shift": "(?i)shift|<<|>>",
+    "memory": "(?i)fifo|ram|rom|register\\s*file|regfile|cam",
+    "protocol_axi": "(?i)axi(4|_lite|_stream)?",
+    "protocol_apb": "(?i)\\bapb\\b",
+    "protocol_uart": "(?i)\\buart\\b|tx\\b|rx\\b",
+    "protocol_spi": "(?i)\\bspi\\b|mode\\s*[0-3]",
+    "protocol_i2c": "(?i)\\bi2c\\b|scl|sda",
+    "clocking": "(?i)clock\\s*divider|baud(gen)?|pll",
+    "reset": "(?i)sync\\s*reset|asynch?\\s*reset|rst(_n)?",
+    "cdc": "(?i)two[-_ ]?ff|two[-_ ]?flip|pulse\\s*sync|async\\s*fifo",
+    "edge": "(?i)rising\\s*edge|falling\\s*edge|both\\s*edge",
+    "tb_sv": "(?i)\\binitial\\b|\\b$finish\\b|\\b$display\\b",
+    "tb_cocotb": "(?i)@cocotb\\.test|import\\s+cocotb",
+    "formal": "(?i)sby|symbiyosys|assert\\s+property"
+  }
+}

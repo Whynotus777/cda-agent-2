@@ -162,7 +162,16 @@ The agent orchestrates the complete flow:
 - **Routing**: Detailed routing (TritonRoute)
 - **Analysis**: Timing (OpenSTA) and Power analysis
 
-### 3. RL-Based Optimization
+### 3. Verification Feedback Loop
+
+- **A7 Testbench generation** now supports an optional Qwen-backed LLM
+  (`USE_A7_LLM=1`) or deterministic templates.
+- **Simulation (iverilog + vvp)** is a first-class stage; failing runs trigger the
+  `DecisionManager` to retry lint fixes or regenerate RTL before aborting.
+- **Structured traces** (`data/runs/<run_id>/trace.jsonl`) capture every stage’s
+  metrics, artefacts, and remediation decision for downstream dataset creation.
+
+### 4. RL-Based Optimization
 
 The RL agent learns to:
 - Adjust placement density for optimal PPA
@@ -170,7 +179,7 @@ The RL agent learns to:
 - Buffer critical paths
 - Balance power, performance, and area trade-offs
 
-### 4. Design Goals
+### 5. Design Goals
 
 Specify what you care about:
 ```yaml

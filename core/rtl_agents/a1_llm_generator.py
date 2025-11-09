@@ -1,6 +1,6 @@
 """
-A1 LLM Generator - Fine-tuned Mixtral RTL Generator
-Wrapper for using fine-tuned LLM models (V3, V4, V5) in the pipeline
+A1 LLM Generator - Fine-tuned Qwen2.5-Coder-7B RTL Generator
+Wrapper for using fine-tuned LLM models in the pipeline
 """
 
 import time
@@ -19,8 +19,8 @@ class A1_LLMGenerator(BaseAgent):
     """
     A1 LLM-based RTL Generator
 
-    Uses fine-tuned Mixtral-8x7B models for spec-to-RTL generation.
-    Supports loading different model versions (V3, V4, V5).
+    Uses fine-tuned Qwen2.5-Coder-7B for spec-to-RTL generation.
+    Optimized for code generation with 4-bit quantization.
     """
 
     def __init__(self, config: Dict[str, Any]):
@@ -41,9 +41,9 @@ class A1_LLMGenerator(BaseAgent):
         )
 
         self.adapter_path = Path(config.get('model_path',
-            'models/mixtral_rtl/run_pure_20251030_121523/final_model'))
+            'models/qwen_coder_rtl/latest/final_model'))
         self.base_model_path = Path(config.get('base_model_path',
-            'models/mixtral_base/Mixtral-8x7B-Instruct-v0.1'))
+            'Qwen/Qwen2.5-Coder-7B-Instruct'))
         self.max_new_tokens = config.get('max_new_tokens', 4096)
         self.temperature = config.get('temperature', 0.7)
         self.top_p = config.get('top_p', 0.95)
@@ -84,20 +84,19 @@ class A1_LLMGenerator(BaseAgent):
 
         if adapter_config.exists():
             # Load as adapter on base model
-            print("   Loading base Mixtral-8x7B...")
+            print("   Loading base Qwen2.5-Coder-7B...")
             base_model = AutoModelForCausalLM.from_pretrained(
                 str(self.base_model_path),
                 quantization_config=bnb_config,
                 device_map="auto",
                 trust_remote_code=True,
-                local_files_only=True
+                torch_dtype=torch.bfloat16
             )
 
             print("   Loading fine-tuned adapter...")
             self.model = PeftModel.from_pretrained(
                 base_model,
-                str(self.adapter_path),
-                local_files_only=True
+                str(self.adapter_path)
             )
         else:
             # Load as full model
@@ -213,11 +212,13 @@ class A1_LLMGenerator(BaseAgent):
 
         rag_context = self._retrieve_rag_context(specification, parameters)
 
-        # Create prompt
+        # Create prompt in Qwen2.5-Coder format
         param_str = ", ".join([f"{k}={v}" for k, v in parameters.items()])
         context_block = f"Context from knowledge base:\n{rag_context}\n\n" if rag_context else ""
 
-        prompt = f"""[INST] {context_block}Generate synthesizable SystemVerilog (IEEE 1800) for a module named '{module_name}'.
+        system_msg = "You are an expert RTL (Register Transfer Level) code generator. Generate clean, syntactically correct Verilog/SystemVerilog code."
+
+        user_message = f"""{context_block}Generate synthesizable SystemVerilog (IEEE 1800) for a module named '{module_name}'.
 
 Specification: {specification}
 
@@ -229,7 +230,9 @@ Requirements:
 - Implement the complete functionality, including FIFOs or clock dividers if required.
 - Do not emit testbenches, assertions, or simulation-only constructs.
 
-Generate only the SystemVerilog module code. [/INST]"""
+Generate only the SystemVerilog module code."""
+
+        prompt = f"<|im_start|>system\n{system_msg}<|im_end|>\n<|im_start|>user\n{user_message}<|im_end|>\n<|im_start|>assistant\n"
 
         print(f"\n📝 Generating RTL with A1 LLM...")
         print(f"   Module: {module_name}")
@@ -262,9 +265,12 @@ Generate only the SystemVerilog module code. [/INST]"""
             # Decode
             generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-            # Extract Verilog code (after [/INST])
-            if '[/INST]' in generated_text:
-                rtl_code = generated_text.split('[/INST]')[1].strip()
+            # Extract Verilog code (after assistant marker)
+            if '<|im_start|>assistant' in generated_text:
+                rtl_code = generated_text.split('<|im_start|>assistant')[1].strip()
+                # Remove trailing <|im_end|> if present
+                if '<|im_end|>' in rtl_code:
+                    rtl_code = rtl_code.split('<|im_end|>')[0].strip()
             else:
                 rtl_code = generated_text.strip()
 
@@ -284,7 +290,7 @@ Generate only the SystemVerilog module code. [/INST]"""
                 output_data={
                     'rtl_code': rtl_code,
                     'ports': ports,
-                    'generation_method': 'llm_mixtral',
+                    'generation_method': 'llm_qwen_coder',
                     'model_path': str(self.adapter_path),
                     'generation_time_s': generation_time,
                     'tokens_generated': len(outputs[0]) - len(inputs['input_ids'][0]),

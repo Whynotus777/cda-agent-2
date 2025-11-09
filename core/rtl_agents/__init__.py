@@ -12,7 +12,12 @@ from .a4_lint_cdc import A4_LintCDCAssistant
 from .a2_boilerplate_gen import A2_BoilerplateGenerator
 from .a3_constraint_synth import A3_ConstraintSynthesizer
 from .a5_style_review import A5_StyleReviewCopilot
-from core.verification.testbench_generator import A7_TestbenchGenerator
+
+# Avoid circular import when core.verification.testbench_generator pulls in BaseAgent.
+try:  # pragma: no cover - guard for tooling scripts
+    from core.verification.testbench_generator import A7_TestbenchGenerator
+except ImportError:  # pragma: no cover
+    A7_TestbenchGenerator = None
 
 __all__ = [
     'BaseAgent',
